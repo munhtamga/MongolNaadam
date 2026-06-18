@@ -15,7 +15,23 @@ function getVoterKey() {
 
 const VOTER_KEY = getVoterKey()
 
-const TITLES = ['Начин', 'Харцага', 'Гаруди', 'Мянга', 'Аварга', 'Дан аварга']
+const TITLES = [
+  'Улсын начин', 'Улсын харцага', 'Улсын арслан', 'Улсын гарьд', 'Улсын заан', 'Улсын аварга',
+  'Дархан аварга', 'Даян аварга',
+  'Аймгийн начин', 'Аймгийн харцага', 'Аймгийн арслан', 'Аймгийн заан',
+  'Сумын начин', 'Сумын харцага', 'Сумын заан',
+  'Цэргийн начин', 'Цэргийн харцага', 'Цэргийн арслан', 'Цэргийн заан',
+  'Залуу бөх',
+]
+
+const DEVJEE = [
+  'Улаанбаатар', 'Дархан', 'Орхон', 'Говьсүмбэр',
+  'Архангай', 'Баян-Өлгий', 'Баянхонгор', 'Булган',
+  'Говь-Алтай', 'Говь-Сүмбэр', 'Дорнод', 'Дорноговь',
+  'Дундговь', 'Завхан', 'Өмнөговь', 'Өвөрхангай',
+  'Сүхбаатар', 'Сэлэнгэ', 'Төв', 'Увс',
+  'Ховд', 'Хэнтий', 'Хөвсгөл', 'ӨМӨЗО',
+]
 
 const COLORS = {
   bg: 'var(--tg-theme-bg-color, #ffffff)',
@@ -34,7 +50,7 @@ export default function App() {
   const [voteCounts, setVoteCounts] = useState({})
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ blue_name: '', blue_title: 'Начин', red_name: '', red_title: 'Начин', round: 1, status: 'upcoming' })
+  const [form, setForm] = useState({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улсын', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улсын', round: 1, status: 'upcoming' })
   const [toast, setToast] = useState('')
 
   const showToast = (msg) => {
@@ -106,14 +122,16 @@ export default function App() {
     const { error } = await supabase.from('matches').insert({
       blue_name: form.blue_name.trim(),
       blue_title: form.blue_title,
+      blue_devjee: form.blue_devjee,
       red_name: form.red_name.trim(),
       red_title: form.red_title,
+      red_devjee: form.red_devjee,
       round: Number(form.round),
       status: form.status,
     })
     if (error) { showToast('Алдаа гарлаа'); return }
     setShowForm(false)
-    setForm({ blue_name: '', blue_title: 'Начин', red_name: '', red_title: 'Начин', round: 1, status: 'upcoming' })
+    setForm({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улсын', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улсын', round: 1, status: 'upcoming' })
     showToast('Барилдаан нэмэгдлээ!')
     fetchData()
   }
@@ -187,12 +205,14 @@ export default function App() {
             <div style={s.avatar('#3390ec')}>{getInitials(m.blue_name)}</div>
             <div style={s.name}>{m.blue_name}</div>
             <div style={s.titleText}>{m.blue_title}</div>
+            {m.blue_devjee && <div style={{...s.titleText, fontSize: 10}}>{m.blue_devjee} дэвжээ</div>}
           </div>
           <div style={s.vs}>VS</div>
           <div style={s.wrestler}>
             <div style={s.avatar('#e53935')}>{getInitials(m.red_name)}</div>
             <div style={s.name}>{m.red_name}</div>
             <div style={s.titleText}>{m.red_title}</div>
+            {m.red_devjee && <div style={{...s.titleText, fontSize: 10}}>{m.red_devjee} дэвжээ</div>}
           </div>
         </div>
 
@@ -268,6 +288,20 @@ export default function App() {
                   <label style={s.label}>Цол (улаан)</label>
                   <select style={s.input} value={form.red_title} onChange={e => setForm(p => ({ ...p, red_title: e.target.value }))}>
                     {TITLES.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={s.formRow}>
+                <div>
+                  <label style={s.label}>Дэвжээ (цэнхэр)</label>
+                  <select style={s.input} value={form.blue_devjee} onChange={e => setForm(p => ({ ...p, blue_devjee: e.target.value }))}>
+                    {DEVJEE.map(d => <option key={d}>{d}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={s.label}>Дэвжээ (улаан)</label>
+                  <select style={s.input} value={form.red_devjee} onChange={e => setForm(p => ({ ...p, red_devjee: e.target.value }))}>
+                    {DEVJEE.map(d => <option key={d}>{d}</option>)}
                   </select>
                 </div>
               </div>

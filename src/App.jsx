@@ -77,12 +77,11 @@ export default function App() {
   }, [])
 
   const checkSubscription = useCallback(async () => {
-    const { data, error } = await supabase.from('subscriptions')
+    const { data } = await supabase.from('subscriptions')
       .select('*')
       .eq('voter_key', VOTER_KEY)
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
-    console.log('checkSubscription:', { data, error, VOTER_KEY })
     setIsSubscribed(!!(data && data.length > 0))
   }, [])
 
@@ -150,11 +149,9 @@ export default function App() {
   }
 
   const vote = async (matchId, side) => {
-    console.log('vote clicked:', { isSubscribed, matchId, side, VOTER_KEY })
     if (!isSubscribed) { setSubPage(true); return }
     if (myVotes[matchId]) { showToast('Та энэ барилдаанд санал өгсөн байна'); return }
     const { error } = await supabase.from('votes').insert({ match_id: matchId, side, voter_key: VOTER_KEY })
-    console.log('vote insert result:', { error })
     if (error) { showToast('Алдаа гарлаа'); return }
     setMyVotes(p => ({ ...p, [matchId]: side }))
     setVoteCounts(p => ({ ...p, [matchId]: { ...(p[matchId] || { blue: 0, red: 0 }), [side]: ((p[matchId]?.[side] || 0) + 1) } }))

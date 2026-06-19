@@ -82,8 +82,7 @@ export default function App() {
       .eq('voter_key', VOTER_KEY)
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
-      .single()
-    setIsSubscribed(!!data)
+    setIsSubscribed(!!(data && data.length > 0))
   }, [])
 
   const fetchData = useCallback(async () => {

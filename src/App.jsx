@@ -1,11 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from './supabase.js'
 
-// Telegram WebApp SDK
 const tg = window.Telegram?.WebApp
 const tgUser = tg?.initDataUnsafe?.user
 
-// Хэрэглэгчийн unique key (Telegram user id эсвэл random)
 function getVoterKey() {
   if (tgUser?.id) return `tg_${tgUser.id}`
   let k = localStorage.getItem('voter_key')
@@ -50,14 +48,43 @@ export default function App() {
   const [voteCounts, setVoteCounts] = useState({})
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улсын', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улсын', round: 1, status: 'upcoming' })
+  const [form, setForm] = useState({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
   const [toast, setToast] = useState('')
+
+  // Subscription
+  const [subPage, setSubPage] = useState(false)
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [prices, setPrices] = useState({ standard: 5000, premium: 15000, stars_standard: 50, stars_premium: 150 })
+  const [subLoading, setSubLoading] = useState(false)
 
   const showToast = (msg) => {
     setToast(msg)
     setTimeout(() => setToast(''), 2500)
     tg?.HapticFeedback?.notificationOccurred('success')
   }
+
+  const fetchSettings = useCallback(async () => {
+    const { data } = await supabase.from('settings').select('key, value')
+    if (!data) return
+    const map = {}
+    data.forEach(r => { map[r.key] = r.value })
+    setPrices({
+      standard: Number(map.price_standard || 5000),
+      premium: Number(map.price_premium || 15000),
+      stars_standard: Number(map.stars_standard || 50),
+      stars_premium: Number(map.stars_premium || 150),
+    })
+  }, [])
+
+  const checkSubscription = useCallback(async () => {
+    const { data } = await supabase.from('subscriptions')
+      .select('*')
+      .eq('voter_key', VOTER_KEY)
+      .eq('status', 'active')
+      .gt('expires_at', new Date().toISOString())
+      .single()
+    setIsSubscribed(!!data)
+  }, [])
 
   const fetchData = useCallback(async () => {
     const [{ data: active }, { data: done }] = await Promise.all([
@@ -88,18 +115,42 @@ export default function App() {
   useEffect(() => {
     tg?.ready()
     tg?.expand()
+    fetchSettings()
+    checkSubscription()
     fetchData()
 
-    // Realtime subscription
     const channel = supabase.channel('realtime-matches')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, fetchData)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'votes' }, fetchData)
       .subscribe()
 
     return () => supabase.removeChannel(channel)
-  }, [fetchData])
+  }, [fetchData, fetchSettings, checkSubscription])
+
+  const subscribe = async (plan) => {
+    setSubLoading(true)
+    const months = 1
+    const expiresAt = new Date()
+    expiresAt.setMonth(expiresAt.getMonth() + months)
+
+    const { error } = await supabase.from('subscriptions').upsert({
+      voter_key: VOTER_KEY,
+      plan,
+      status: 'active',
+      expires_at: expiresAt.toISOString(),
+      tg_user_id: tgUser?.id ? String(tgUser.id) : null,
+      tg_username: tgUser?.username || null,
+    }, { onConflict: 'voter_key' })
+
+    setSubLoading(false)
+    if (error) { showToast('Алдаа гарлаа'); return }
+    setIsSubscribed(true)
+    setSubPage(false)
+    showToast('Subscription идэвхжлээ! 🎉')
+  }
 
   const vote = async (matchId, side) => {
+    if (!isSubscribed) { setSubPage(true); return }
     if (myVotes[matchId]) { showToast('Та энэ барилдаанд санал өгсөн байна'); return }
     const { error } = await supabase.from('votes').insert({ match_id: matchId, side, voter_key: VOTER_KEY })
     if (error) { showToast('Алдаа гарлаа'); return }
@@ -131,7 +182,7 @@ export default function App() {
     })
     if (error) { showToast('Алдаа гарлаа'); return }
     setShowForm(false)
-    setForm({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улсын', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улсын', round: 1, status: 'upcoming' })
+    setForm({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
     showToast('Барилдаан нэмэгдлээ!')
     fetchData()
   }
@@ -147,7 +198,7 @@ export default function App() {
 
   const s = {
     wrap: { minHeight: '100vh', background: COLORS.bg, color: COLORS.text, paddingBottom: 80 },
-    header: { padding: '16px 16px 8px', borderBottom: `1px solid ${COLORS.secondary}` },
+    header: { padding: '16px 16px 8px', borderBottom: `1px solid ${COLORS.secondary}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     title: { fontSize: 18, fontWeight: 600 },
     subtitle: { fontSize: 12, color: COLORS.hint, marginTop: 2 },
     tabs: { display: 'flex', gap: 8, padding: '12px 16px' },
@@ -243,11 +294,96 @@ export default function App() {
     )
   }
 
+  // Subscription хуудас
+  const SubPage = () => (
+    <div style={{ padding: '24px 16px' }}>
+      <button onClick={() => setSubPage(false)} style={{ background: 'none', border: 'none', color: COLORS.button, fontSize: 14, cursor: 'pointer', marginBottom: 16, padding: 0 }}>← Буцах</button>
+      <div style={{ textAlign: 'center', marginBottom: 24 }}>
+        <div style={{ fontSize: 40, marginBottom: 8 }}>🏆</div>
+        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Subscription авах</div>
+        <div style={{ fontSize: 13, color: COLORS.hint }}>Барилдааны тааварт оролцож, оноо цуглуул</div>
+      </div>
+
+      {/* Стандарт */}
+      <div style={{ background: COLORS.secondary, borderRadius: 16, padding: 20, marginBottom: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>Стандарт</div>
+            <div style={{ fontSize: 12, color: COLORS.hint }}>1 сар</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.button }}>{prices.standard.toLocaleString()}₮</div>
+            <div style={{ fontSize: 11, color: COLORS.hint }}>{prices.stars_standard} ⭐ Stars</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: COLORS.hint, marginBottom: 16, lineHeight: 1.7 }}>
+          ✓ Бүх барилдаанд санал өгөх<br />
+          ✓ Виртуал оноо цуглуулах<br />
+          ✓ Leaderboard харах
+        </div>
+        <button
+          style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: COLORS.button, color: COLORS.buttonText, fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: subLoading ? 0.6 : 1 }}
+          onClick={() => subscribe('standard')}
+          disabled={subLoading}
+        >
+          {subLoading ? 'Уншиж байна...' : 'Стандарт авах'}
+        </button>
+      </div>
+
+      {/* Premium */}
+      <div style={{ background: '#FFF8E1', borderRadius: 16, padding: 20, border: '1.5px solid #FFD54F' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 600 }}>Premium ⭐</div>
+            <div style={{ fontSize: 12, color: COLORS.hint }}>1 сар</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: '#F57F17' }}>{prices.premium.toLocaleString()}₮</div>
+            <div style={{ fontSize: 11, color: COLORS.hint }}>{prices.stars_premium} ⭐ Stars</div>
+          </div>
+        </div>
+        <div style={{ fontSize: 12, color: COLORS.hint, marginBottom: 16, lineHeight: 1.7 }}>
+          ✓ Стандартын бүх эрх<br />
+          ✓ Дэлгэрэнгүй статистик<br />
+          ✓ Бөхийн түүх харах<br />
+          ✓ Premium тэмдэг 🥇
+        </div>
+        <button
+          style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#F57F17', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: subLoading ? 0.6 : 1 }}
+          onClick={() => subscribe('premium')}
+          disabled={subLoading}
+        >
+          {subLoading ? 'Уншиж байна...' : 'Premium авах'}
+        </button>
+      </div>
+
+      <div style={{ fontSize: 11, color: COLORS.hint, textAlign: 'center', marginTop: 16 }}>
+        Төлбөр: QPay, SocialPay, Telegram Stars
+      </div>
+    </div>
+  )
+
+  if (subPage) return (
+    <div style={s.wrap}>
+      <SubPage />
+      <div style={s.toastEl}>{toast}</div>
+    </div>
+  )
+
   return (
     <div style={s.wrap}>
       <div style={s.header}>
-        <div style={s.title}>🤼 Монгол Бөх</div>
-        <div style={s.subtitle}>Барилдааны урьдчилан таамаглал</div>
+        <div>
+          <div style={s.title}>🤼 Монгол Бөх</div>
+          <div style={s.subtitle}>Барилдааны урьдчилан таамаглал</div>
+        </div>
+        {isSubscribed ? (
+          <div style={{ fontSize: 11, background: '#E8F5E9', color: '#2E7D32', padding: '4px 10px', borderRadius: 20, fontWeight: 600 }}>✓ Идэвхтэй</div>
+        ) : (
+          <button onClick={() => setSubPage(true)} style={{ fontSize: 12, background: COLORS.button, color: COLORS.buttonText, border: 'none', padding: '6px 12px', borderRadius: 20, cursor: 'pointer', fontWeight: 600 }}>
+            Subscription
+          </button>
+        )}
       </div>
 
       <div style={s.tabs}>
@@ -259,6 +395,12 @@ export default function App() {
         <div style={s.empty}>Уншиж байна...</div>
       ) : tab === 'active' ? (
         <>
+          {!isSubscribed && (
+            <div style={{ margin: '0 12px 12px', background: '#E3F2FD', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#1565C0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span>Санал өгөхийн тулд subscription авна уу</span>
+              <button onClick={() => setSubPage(true)} style={{ background: COLORS.button, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Авах</button>
+            </div>
+          )}
           {matches.length === 0 && <div style={s.empty}>Одоогоор барилдаан байхгүй байна</div>}
           {matches.map(m => <MatchCard key={m.id} m={m} isHistory={false} />)}
 

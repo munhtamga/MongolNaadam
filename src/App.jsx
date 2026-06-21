@@ -54,6 +54,7 @@ export default function App() {
   // Subscription
   const [subPage, setSubPage] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [prices, setPrices] = useState({ standard: 5000, premium: 15000, stars_standard: 50, stars_premium: 150 })
   const [subLoading, setSubLoading] = useState(false)
 
@@ -83,6 +84,14 @@ export default function App() {
       .eq('status', 'active')
       .gt('expires_at', new Date().toISOString())
     setIsSubscribed(!!(data && data.length > 0))
+  }, [])
+
+  const checkAdmin = useCallback(async () => {
+    if (!tgUser?.id) return
+    const { data } = await supabase.from('admins')
+      .select('tg_id')
+      .eq('tg_id', String(tgUser.id))
+    setIsAdmin(!!(data && data.length > 0))
   }, [])
 
   const fetchData = useCallback(async () => {
@@ -116,6 +125,7 @@ export default function App() {
     tg?.expand()
     fetchSettings()
     checkSubscription()
+    checkAdmin()
     fetchData()
 
     const channel = supabase.channel('realtime-matches')
@@ -124,7 +134,7 @@ export default function App() {
       .subscribe()
 
     return () => supabase.removeChannel(channel)
-  }, [fetchData, fetchSettings, checkSubscription])
+  }, [fetchData, fetchSettings, checkSubscription, checkAdmin])
 
   const subscribe = async (plan) => {
     setSubLoading(true)
@@ -283,10 +293,12 @@ export default function App() {
                 <span style={{ fontSize: 10, fontWeight: 400 }}>{c.red} санал · {redProb}%</span>
               </button>
             </div>
-            <div style={s.winRow}>
-              <button style={s.winBtn('#3390ec')} onClick={() => declareWinner(m.id, 'blue')}>🏆 {m.blue_name} давлаа</button>
-              <button style={s.winBtn('#e53935')} onClick={() => declareWinner(m.id, 'red')}>🏆 {m.red_name} давлаа</button>
-            </div>
+            {isAdmin && (
+              <div style={s.winRow}>
+                <button style={s.winBtn('#3390ec')} onClick={() => declareWinner(m.id, 'blue')}>🏆 {m.blue_name} давлаа</button>
+                <button style={s.winBtn('#e53935')} onClick={() => declareWinner(m.id, 'red')}>🏆 {m.red_name} давлаа</button>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -403,9 +415,9 @@ export default function App() {
           {matches.length === 0 && <div style={s.empty}>Одоогоор барилдаан байхгүй байна</div>}
           {matches.map(m => <MatchCard key={m.id} m={m} isHistory={false} />)}
 
-          {!showForm ? (
+          {isAdmin && !showForm ? (
             <button style={s.addBtn} onClick={() => setShowForm(true)}>+ Шинэ барилдаан нэмэх</button>
-          ) : (
+          ) : isAdmin ? (
             <div style={s.formCard}>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Шинэ барилдаан</div>
               <div style={s.formRow}>

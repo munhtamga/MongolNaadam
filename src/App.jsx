@@ -48,7 +48,7 @@ export default function App() {
   const [voteCounts, setVoteCounts] = useState({})
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [form, setForm] = useState({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
+  const [form, setForm] = useState({ name: '', blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
   const [toast, setToast] = useState('')
 
   // Subscription
@@ -180,6 +180,7 @@ export default function App() {
   const addMatch = async () => {
     if (!form.blue_name.trim() || !form.red_name.trim()) { showToast('Бөхийн нэр оруулна уу'); return }
     const { error } = await supabase.from('matches').insert({
+      name: form.name.trim() || null,
       blue_name: form.blue_name.trim(),
       blue_title: form.blue_title,
       blue_devjee: form.blue_devjee,
@@ -191,7 +192,7 @@ export default function App() {
     })
     if (error) { showToast('Алдаа гарлаа'); return }
     setShowForm(false)
-    setForm({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
+    setForm({ name: '', blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
     showToast('Барилдаан нэмэгдлээ!')
     fetchData()
   }
@@ -248,6 +249,7 @@ export default function App() {
 
     return (
       <div style={s.card}>
+        {m.name && <div style={{ fontSize: 12, fontWeight: 600, color: COLORS.button, marginBottom: 6 }}>{m.name}</div>}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
           <span style={s.badge(m.status === 'live')}>{m.status === 'live' ? '● Шууд' : m.status === 'upcoming' ? 'Удахгүй' : 'Дууссан'}</span>
           <span style={{ fontSize: 12, color: COLORS.hint }}>{m.round}-р давааны барилдаан</span>
@@ -420,6 +422,10 @@ export default function App() {
           ) : isAdmin ? (
             <div style={s.formCard}>
               <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Шинэ барилдаан</div>
+              <div style={{ marginBottom: 10 }}>
+                <label style={s.label}>Барилдааны нэр</label>
+                <input style={s.input} placeholder="2026 оны улсын баяр наадам" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} />
+              </div>
               <div style={s.formRow}>
                 <div>
                   <label style={s.label}>Цэнхэр бөх</label>

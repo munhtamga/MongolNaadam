@@ -31,15 +31,31 @@ const DEVJEE = [
   'Ховд', 'Хэнтий', 'Хөвсгөл', 'ӨМӨЗО',
 ]
 
-const ROUNDS = [
-  { round: 5, label: '5-р давааны бөхчүүд', max: 16, points: 1 },
-  { round: 6, label: '6-р давааны бөхчүүд', max: 8, points: 2 },
-  { round: 7, label: '7-р давааны бөхчүүд', max: 4, points: 4 },
-  { round: 8, label: '8-р давааны бөхчүүд', max: 2, points: 8 },
-  { round: 9, label: '9-р давааны бөх', max: 1, points: 16 },
+const TOURNAMENT_NAMES = [
+  'Улсын наадам','Цагаан сар','Цагаан сар (сум)','Цагаан сар (аймгийн начин)',
+  'Цагаан сар (аймаг, цэрэг)','БНМАУ тунхагласны ой','Ерөнхийлөгчийн цом',
+  'Цэргийн наадам','Начин цолны хүндэтгэл','Харцага цолны хүндэтгэл',
+  'Заан цолны хүндэтгэл','Гарьд цолны хүндэтгэл','Арслан цолны хүндэтгэл',
+  'Аварга цолны хүндэтгэл','Сонгинохайрхан хишиг','Баянзүрх хишиг',
+  'Богдхан хишиг','Чингэлтэй хишиг','Хатан Туулын хишиг','Зэвсэгт хүчний ой',
+  'Наурызын баяр','Атар хэвийн боовны баяр','Шинэ үндсэн хуулийн барилдаан',
+  'Эх орончдын өдөр','Монгол бахархлын өдөр','Ардчилсан намын ой',
+  'Ардчилсан хувьсгалын ой','Наадмын сорилго','Уяачдын наадам',
+  'Нэрэмжит барилдаан','Аймгийн цолтон','Аймгийн начин','Сумын цолтон',
+  'Аймгийн баяр наадам','Орон нутгийн барилдаан','Үндэсний алтан цом',
+  'Ойн барилдаан','Цолгүй залуу бөхчүүдийн барилдаан','Нийтийн монгол бөх',
+  'Нийслэл Улаанбаатар хотын ой',
 ]
 
-const ROUND_POINTS = { 5: 1, 6: 2, 7: 4, 8: 8, 9: 16 }
+const ROUND_TYPES = [
+  { type: '16', label: 'Шөвгийн 16 бөх', max: 16, points: 1 },
+  { type: '8',  label: 'Шөвгийн 8 бөх',  max: 8,  points: 2 },
+  { type: '4',  label: 'Шөвгийн 4 бөх',  max: 4,  points: 4 },
+  { type: '2',  label: 'Үзүүр, түрүүний бөх', max: 2, points: 8 },
+  { type: '1',  label: 'Түрүү бөх',       max: 1,  points: 16 },
+]
+
+const ROUND_POINTS = { '16': 1, '8': 2, '4': 4, '2': 8, '1': 16 }
 
 const C = {
   bg: 'var(--tg-theme-bg-color,#fff)',
@@ -50,425 +66,525 @@ const C = {
   btnText: 'var(--tg-theme-button-text-color,#fff)',
 }
 
-const NAV_ITEMS = [
+const NAV = [
   { id: 'leaderboard', icon: '🏆', label: 'Байр' },
-  { id: 'profile', icon: '👤', label: 'Профайл' },
-  { id: 'predict', icon: '🤼', label: 'Таавар' },
-  { id: 'rules', icon: '💰', label: 'Дүрэм' },
+  { id: 'profile',     icon: '👤', label: 'Профайл' },
+  { id: 'predict',     icon: '🤼', label: 'Таамаглал' },
+  { id: 'rules',       icon: '💰', label: 'Дүрэм' },
 ]
 
 const st = {
   wrap: { minHeight: '100vh', background: C.bg, color: C.text, paddingBottom: 70 },
   header: { padding: '14px 16px 10px', borderBottom: `1px solid ${C.sec}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
   navBar: { position: 'fixed', bottom: 0, left: 0, right: 0, background: C.bg, borderTop: `1px solid ${C.sec}`, display: 'flex', zIndex: 100, paddingBottom: 'env(safe-area-inset-bottom)' },
-  navItem: (active) => ({ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 0 6px', cursor: 'pointer', border: 'none', background: 'transparent', color: active ? C.btn : C.hint, transition: 'color 0.15s' }),
+  navItem: (a) => ({ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '8px 0 6px', cursor: 'pointer', border: 'none', background: 'transparent', color: a ? C.btn : C.hint }),
   navIcon: { fontSize: 22, lineHeight: 1 },
-  navLabel: (active) => ({ fontSize: 10, marginTop: 3, fontWeight: active ? 600 : 400 },),
+  navLabel: (a) => ({ fontSize: 10, marginTop: 3, fontWeight: a ? 600 : 400 }),
   card: { background: C.bg, border: `1px solid ${C.sec}`, borderRadius: 16, padding: 16, margin: '0 12px 12px' },
-  badge: (live) => ({ display: 'inline-block', fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 10, background: live ? '#ff3b3020' : C.sec, color: live ? '#e53935' : C.hint }),
-  wrestlers: { display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: 8, alignItems: 'center', margin: '12px 0' },
-  wrestler: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 },
-  avatar: (c) => ({ width: 52, height: 52, borderRadius: '50%', background: c, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, fontWeight: 600, color: '#fff' }),
-  name: { fontSize: 13, fontWeight: 500, textAlign: 'center' },
-  hint: { fontSize: 10, color: C.hint, textAlign: 'center' },
-  vs: { fontSize: 16, fontWeight: 600, color: C.hint },
-  barWrap: { borderRadius: 8, overflow: 'hidden', height: 26, display: 'flex', background: C.sec, margin: '8px 0' },
-  barBlue: (p) => ({ width: `${p}%`, background: '#3390ec', display: 'flex', alignItems: 'center', paddingLeft: 8, fontSize: 11, fontWeight: 600, color: '#fff', transition: 'width 0.4s' }),
-  barRed: (p) => ({ width: `${p}%`, background: '#e53935', display: 'flex', alignItems: 'center', justifyContent: 'flex-end', paddingRight: 8, fontSize: 11, fontWeight: 600, color: '#fff', transition: 'width 0.4s' }),
-  voteRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 },
-  voteBtn: (sel, c) => ({ padding: '10px 8px', borderRadius: 10, border: sel ? `2px solid ${c}` : `1px solid ${C.sec}`, background: sel ? `${c}18` : C.sec, cursor: 'pointer', fontSize: 12, fontWeight: 500, color: sel ? c : C.text }),
-  winRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 8 },
-  winBtn: (c) => ({ padding: '8px', borderRadius: 10, border: `1px solid ${c}40`, background: `${c}10`, cursor: 'pointer', fontSize: 11, fontWeight: 500, color: c }),
-  addBtn: { display: 'block', width: 'calc(100% - 24px)', margin: '0 12px 12px', padding: 14, borderRadius: 12, border: `1.5px dashed ${C.hint}60`, background: 'transparent', cursor: 'pointer', fontSize: 14, color: C.hint },
   formCard: { background: C.sec, borderRadius: 16, padding: 16, margin: '0 12px 12px' },
   formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 },
   label: { fontSize: 11, color: C.hint, marginBottom: 4, display: 'block' },
   input: { width: '100%', padding: '9px 12px', borderRadius: 10, border: `1px solid ${C.hint}40`, background: C.bg, color: C.text, fontSize: 13, outline: 'none' },
   primaryBtn: { flex: 1, padding: 12, borderRadius: 10, border: 'none', background: C.btn, color: C.btnText, fontSize: 14, fontWeight: 600, cursor: 'pointer' },
   cancelBtn: { padding: '12px 16px', borderRadius: 10, border: `1px solid ${C.hint}40`, background: 'transparent', color: C.hint, fontSize: 14, cursor: 'pointer' },
-  winnerBadge: (s) => ({ display: 'inline-block', padding: '4px 14px', borderRadius: 20, fontSize: 12, fontWeight: 600, background: s === 'blue' ? '#3390ec20' : '#e5393520', color: s === 'blue' ? '#3390ec' : '#e53935', marginBottom: 8 }),
+  addBtn: (color) => ({ display: 'block', width: 'calc(100% - 24px)', margin: '0 12px 12px', padding: 12, borderRadius: 12, border: `1.5px dashed ${color || C.hint}60`, background: 'transparent', cursor: 'pointer', fontSize: 13, color: color || C.hint }),
+  subTab: (a) => ({ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: a ? 600 : 400, background: a ? C.btn : C.sec, color: a ? C.btnText : C.text, whiteSpace: 'nowrap', flexShrink: 0 }),
+  iconBtn: (c) => ({ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: c || C.hint, padding: '2px 6px' }),
   toastEl: (show) => ({ position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)', background: '#222', color: '#fff', padding: '10px 20px', borderRadius: 20, fontSize: 13, zIndex: 999, opacity: show ? 1 : 0, transition: 'opacity 0.3s', pointerEvents: 'none', whiteSpace: 'nowrap' }),
   empty: { textAlign: 'center', color: C.hint, fontSize: 13, padding: '32px 0' },
-  secTitle: { fontSize: 13, fontWeight: 600, color: C.text, padding: '8px 16px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-  iconBtn: (c) => ({ background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, color: c || C.hint, padding: '2px 6px' }),
-  subTab: (a) => ({ padding: '6px 14px', borderRadius: 20, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: a ? 600 : 400, background: a ? C.btn : C.sec, color: a ? C.btnText : C.text, whiteSpace: 'nowrap', flexShrink: 0 }),
+  secTitle: { fontSize: 14, fontWeight: 700, color: C.text, padding: '10px 16px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+  checkBtn: (sel) => ({ width: 28, height: 28, borderRadius: 8, border: sel ? '2px solid #3390ec' : `1px solid ${C.hint}40`, background: sel ? '#3390ec' : 'transparent', color: sel ? '#fff' : C.hint, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }),
 }
 
 export default function App() {
   const [page, setPage] = useState('predict')
-  const [predictTab, setPredictTab] = useState('match')
-  const [matchHistTab, setMatchHistTab] = useState('active')
-
-  const [tournaments, setTournaments] = useState([])
-  const [matches, setMatches] = useState([])
-  const [history, setHistory] = useState([])
-  const [myVotes, setMyVotes] = useState({})
-  const [voteCounts, setVoteCounts] = useState({})
-  const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState('')
 
-  const [showTournamentForm, setShowTournamentForm] = useState(false)
-  const [editTournament, setEditTournament] = useState(null)
-  const [tournamentName, setTournamentName] = useState('')
-  const [tournamentYear, setTournamentYear] = useState(new Date().getFullYear())
-  const [showMatchForm, setShowMatchForm] = useState(false)
-  const [selectedTournamentId, setSelectedTournamentId] = useState(null)
-  const [form, setForm] = useState({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
-
-  const [naadamWrestlers, setNaadamWrestlers] = useState([])
-  const [myPredictions, setMyPredictions] = useState({})
-  const [predCounts, setPredCounts] = useState({})
-  const [naadamRound, setNaadamRound] = useState(5)
-  const [filterTitle, setFilterTitle] = useState('')
-  const [filterDevjee, setFilterDevjee] = useState('')
-  const [showWrestlerForm, setShowWrestlerForm] = useState(false)
-  const [wrestlerForm, setWrestlerForm] = useState({ name: '', title: 'Улсын начин', devjee: 'Улаанбаатар', isCustom: false, customName: '' })
-
+  // Data
+  const [tournaments, setTournaments] = useState([])
+  const [wrestlers, setWrestlers] = useState([])
+  const [tournamentRounds, setTournamentRounds] = useState([])
+  const [myPicks, setMyPicks] = useState({})
+  const [pickCounts, setPickCounts] = useState({})
   const [leaderboard, setLeaderboard] = useState([])
-  const [prizePool, setPrizePool] = useState(100000)
 
-  const [subPage, setSubPage] = useState(false)
+  // Auth
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isAdmin, setIsAdmin] = useState(false)
-  const [prices, setPrices] = useState({ standard: 5000, premium: 15000, stars_standard: 50, stars_premium: 150 })
+  const [subPage, setSubPage] = useState(false)
+  const [prices, setPrices] = useState({ standard: 5000, premium: 15000 })
   const [subLoading, setSubLoading] = useState(false)
-  const [myScore, setMyScore] = useState(null)
+
+  // UI state
+  const [loading, setLoading] = useState(true)
+  const [expandedTournament, setExpandedTournament] = useState(null)
+  const [expandedRound, setExpandedRound] = useState(null)
+  const [filterTitle, setFilterTitle] = useState('')
+  const [filterDevjee, setFilterDevjee] = useState('')
+  const [searchName, setSearchName] = useState('')
+  const [showAddWrestler, setShowAddWrestler] = useState(null)
+  const [newWrestler, setNewWrestler] = useState({ name: '', title: 'Улсын начин', devjee: 'Улаанбаатар' })
+
+  // Tournament form
+  const [showTournamentForm, setShowTournamentForm] = useState(false)
+  const [editTournament, setEditTournament] = useState(null)
+  const [tForm, setTForm] = useState({ name: '', year: new Date().getFullYear(), prize_pool: 0 })
+
+  // Confirm dialog
+  const [confirm, setConfirm] = useState(null)
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 2500) }
 
-  const fetchSettings = useCallback(async () => {
-    const { data } = await supabase.from('settings').select('key, value')
-    if (!data) return
-    const map = {}
-    data.forEach(r => { map[r.key] = r.value })
-    setPrices({ standard: Number(map.price_standard || 5000), premium: Number(map.price_premium || 15000), stars_standard: Number(map.stars_standard || 50), stars_premium: Number(map.stars_premium || 150) })
-    setPrizePool(Number(map.prize_pool || 100000))
-  }, [])
-
-  const checkSubscription = useCallback(async () => {
-    const { data } = await supabase.from('subscriptions').select('*').eq('voter_key', VOTER_KEY).eq('status', 'active').gt('expires_at', new Date().toISOString())
-    setIsSubscribed(!!(data && data.length > 0))
-  }, [])
-
-  const checkAdmin = useCallback(async () => {
-    if (!tgUser?.id) return
-    const { data } = await supabase.from('admins').select('tg_id').eq('tg_id', String(tgUser.id))
-    setIsAdmin(!!(data && data.length > 0))
-  }, [])
-
-  const fetchData = useCallback(async () => {
-    const [{ data: tours }, { data: active }, { data: done }] = await Promise.all([
+  const fetchAll = useCallback(async () => {
+    const [{ data: tours }, { data: ws }, { data: rounds }, { data: picks }, { data: subs }] = await Promise.all([
       supabase.from('tournaments').select('*').order('created_at', { ascending: false }),
-      supabase.from('matches').select('*').in('status', ['upcoming', 'live']).order('created_at', { ascending: false }),
-      supabase.from('matches').select('*').eq('status', 'closed').order('created_at', { ascending: false }).limit(30),
+      supabase.from('wrestlers').select('*').order('name'),
+      supabase.from('tournament_rounds').select('*'),
+      supabase.from('round_picks').select('round_id, voter_key, wrestler_name, is_correct'),
+      supabase.from('subscriptions').select('voter_key, tg_username, tg_user_id').eq('status', 'active').gt('expires_at', new Date().toISOString()),
     ])
     setTournaments(tours || [])
-    setMatches(active || [])
-    setHistory(done || [])
-    const allIds = [...(active || []), ...(done || [])].map(m => m.id)
-    if (allIds.length > 0) {
-      const { data: votes } = await supabase.from('votes').select('match_id, side, voter_key').in('match_id', allIds)
-      if (votes) {
-        const counts = {}; const mine = {}
-        votes.forEach(v => {
-          if (!counts[v.match_id]) counts[v.match_id] = { blue: 0, red: 0 }
-          counts[v.match_id][v.side]++
-          if (v.voter_key === VOTER_KEY) mine[v.match_id] = v.side
-        })
-        setVoteCounts(counts); setMyVotes(mine)
-      }
+    setWrestlers(ws || [])
+    setTournamentRounds(rounds || [])
+
+    const mine = {}
+    const counts = {}
+    if (picks) {
+      picks.forEach(p => {
+        const key = `${p.round_id}_${p.wrestler_name}`
+        counts[key] = (counts[key] || 0) + 1
+        if (p.voter_key === VOTER_KEY) mine[key] = { is_correct: p.is_correct }
+      })
     }
+    setMyPicks(mine)
+    setPickCounts(counts)
+
+    // Leaderboard
+    if (picks && tours) {
+      const subMap = {}
+      if (subs) subs.forEach(s => { subMap[s.voter_key] = s.tg_username || s.tg_user_id || 'Хэрэглэгч' })
+
+      const tourMap = {}
+      tours.forEach(t => { tourMap[t.id] = t })
+      const roundMap = {}
+      if (rounds) rounds.forEach(r => { roundMap[r.id] = r })
+
+      // Group by tournament
+      const tourScores = {}
+      picks.forEach(p => {
+        if (!p.is_correct) return
+        const round = roundMap[p.round_id]
+        if (!round) return
+        const pts = ROUND_POINTS[round.round_type] || 1
+        if (!tourScores[round.tournament_id]) tourScores[round.tournament_id] = {}
+        if (!tourScores[round.tournament_id][p.voter_key]) tourScores[round.tournament_id][p.voter_key] = 0
+        tourScores[round.tournament_id][p.voter_key] += pts
+      })
+
+      const board = []
+      Object.entries(tourScores).forEach(([tourId, scores]) => {
+        const tour = tourMap[tourId]
+        if (!tour) return
+        const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
+        const perPoint = totalScore > 0 && tour.prize_pool > 0 ? tour.prize_pool / totalScore : 0
+        Object.entries(scores).forEach(([vk, score]) => {
+          board.push({ tourId, tourName: `${tour.year ? tour.year + ' · ' : ''}${tour.name}`, voter_key: vk, name: subMap[vk] || 'Хэрэглэгч', score, prize: Math.round(score * perPoint) })
+        })
+      })
+      board.sort((a, b) => b.score - a.score)
+      setLeaderboard(board)
+    }
+
     setLoading(false)
   }, [])
 
-  const fetchNaadam = useCallback(async () => {
-    const { data: wrestlers } = await supabase.from('naadam_wrestlers').select('*').order('name')
-    const { data: preds } = await supabase.from('naadam_predictions').select('wrestler_id, voter_key, round')
-    setNaadamWrestlers(wrestlers || [])
-    if (preds) {
-      const counts = {}; const mine = {}
-      preds.forEach(p => {
-        if (!counts[p.wrestler_id]) counts[p.wrestler_id] = 0
-        counts[p.wrestler_id]++
-        if (p.voter_key === VOTER_KEY) mine[`${p.round}_${p.wrestler_id}`] = true
-      })
-      setPredCounts(counts); setMyPredictions(mine)
+  const checkAuth = useCallback(async () => {
+    const { data: sub } = await supabase.from('subscriptions').select('*').eq('voter_key', VOTER_KEY).eq('status', 'active').gt('expires_at', new Date().toISOString())
+    setIsSubscribed(!!(sub && sub.length > 0))
+    if (tgUser?.id) {
+      const { data: adm } = await supabase.from('admins').select('tg_id').eq('tg_id', String(tgUser.id))
+      setIsAdmin(!!(adm && adm.length > 0))
+    }
+    const { data: settings } = await supabase.from('settings').select('key,value')
+    if (settings) {
+      const m = {}; settings.forEach(s => { m[s.key] = s.value })
+      setPrices({ standard: Number(m.price_standard || 5000), premium: Number(m.price_premium || 15000) })
     }
   }, [])
 
-  const fetchLeaderboard = useCallback(async () => {
-    const { data: preds } = await supabase.from('naadam_predictions').select('wrestler_id, voter_key, round')
-    const { data: wrestlers } = await supabase.from('naadam_wrestlers').select('id, round, is_winner, name')
-    const { data: subs } = await supabase.from('subscriptions').select('voter_key, tg_username, tg_user_id')
-    if (!preds || !wrestlers) return
-
-    const winnerIds = new Set(wrestlers.filter(w => w.is_winner).map(w => w.id))
-    const wrestlerMap = {}
-    wrestlers.forEach(w => { wrestlerMap[w.id] = w })
-
-    const scores = {}
-    preds.forEach(p => {
-      if (!scores[p.voter_key]) scores[p.voter_key] = 0
-      if (winnerIds.has(p.wrestler_id)) {
-        const pts = ROUND_POINTS[wrestlerMap[p.wrestler_id]?.round] || 1
-        scores[p.voter_key] += pts
-      }
-    })
-
-    const subMap = {}
-    if (subs) subs.forEach(s => { subMap[s.voter_key] = s.tg_username || s.tg_user_id || 'Хэрэглэгч' })
-
-    const totalScore = Object.values(scores).reduce((a, b) => a + b, 0)
-    const perPoint = totalScore > 0 ? prizePool / totalScore : 0
-
-    const board = Object.entries(scores)
-      .map(([key, score]) => ({ key, score, name: subMap[key] || 'Хэрэглэгч', prize: Math.round(score * perPoint) }))
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 100)
-
-    setLeaderboard(board)
-
-    const mine = board.find(b => b.key === VOTER_KEY)
-    if (mine) setMyScore(mine)
-  }, [prizePool])
-
   useEffect(() => {
     tg?.ready(); tg?.expand()
-    fetchSettings(); checkSubscription(); checkAdmin(); fetchData(); fetchNaadam()
-    const ch = supabase.channel('rt')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, fetchData)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'naadam_predictions' }, fetchNaadam)
-      .subscribe()
-    return () => supabase.removeChannel(ch)
-  }, [fetchData, fetchNaadam, fetchSettings, checkSubscription, checkAdmin])
+    checkAuth(); fetchAll()
+  }, [fetchAll, checkAuth])
 
-  useEffect(() => { fetchLeaderboard() }, [fetchLeaderboard, naadamWrestlers])
-
+  // Tournament CRUD
   const saveTournament = async () => {
-    if (!tournamentName.trim()) { showToast('Нэр оруулна уу'); return }
+    if (!tForm.name) { showToast('Нэр сонгоно уу'); return }
     if (editTournament) {
-      await supabase.from('tournaments').update({ name: tournamentName.trim(), year: tournamentYear }).eq('id', editTournament.id)
+      await supabase.from('tournaments').update({ name: tForm.name, year: tForm.year, prize_pool: tForm.prize_pool }).eq('id', editTournament.id)
+      showToast('Засагдлаа!')
     } else {
-      await supabase.from('tournaments').insert({ name: tournamentName.trim(), year: tournamentYear })
+      const { data } = await supabase.from('tournaments').insert({ name: tForm.name, year: tForm.year, prize_pool: tForm.prize_pool }).select().single()
+      if (data) {
+        // Автоматаар 5 давааны round үүсгэнэ
+        await supabase.from('tournament_rounds').insert(
+          ROUND_TYPES.map(r => ({ tournament_id: data.id, round_type: r.type }))
+        )
+      }
+      showToast('Нэмэгдлээ!')
     }
-    setTournamentName(''); setTournamentYear(new Date().getFullYear()); setEditTournament(null); setShowTournamentForm(false)
-    showToast(editTournament ? 'Засагдлаа!' : 'Нэмэгдлээ!'); fetchData()
+    setShowTournamentForm(false); setEditTournament(null)
+    setTForm({ name: '', year: new Date().getFullYear(), prize_pool: 0 })
+    fetchAll()
   }
 
-  const deleteTournament = async (id) => {
-    if (!window.confirm('Устгах уу?')) return
-    await supabase.from('matches').delete().eq('tournament_id', id)
-    await supabase.from('tournaments').delete().eq('id', id)
-    showToast('Устгагдлаа!'); fetchData()
+  const deleteTournament = async (t) => {
+    const rounds = tournamentRounds.filter(r => r.tournament_id === t.id)
+    const roundIds = rounds.map(r => r.id)
+    const { data: picks } = roundIds.length > 0
+      ? await supabase.from('round_picks').select('id').in('round_id', roundIds).limit(1)
+      : { data: [] }
+
+    if (picks && picks.length > 0) {
+      setConfirm({
+        msg: 'Идэвхтэй таавар байна. Устгах уу?',
+        onConfirm: async () => {
+          if (roundIds.length > 0) await supabase.from('round_picks').delete().in('round_id', roundIds)
+          await supabase.from('tournament_rounds').delete().eq('tournament_id', t.id)
+          await supabase.from('tournaments').delete().eq('id', t.id)
+          setConfirm(null); showToast('Устгагдлаа!'); fetchAll()
+        }
+      })
+    } else {
+      if (roundIds.length > 0) await supabase.from('round_picks').delete().in('round_id', roundIds)
+      await supabase.from('tournament_rounds').delete().eq('tournament_id', t.id)
+      await supabase.from('tournaments').delete().eq('id', t.id)
+      showToast('Устгагдлаа!'); fetchAll()
+    }
   }
 
-  const addMatch = async () => {
-    if (!form.blue_name.trim() || !form.red_name.trim()) { showToast('Бөхийн нэр оруулна уу'); return }
-    await supabase.from('matches').insert({ tournament_id: selectedTournamentId, blue_name: form.blue_name.trim(), blue_title: form.blue_title, blue_devjee: form.blue_devjee, red_name: form.red_name.trim(), red_title: form.red_title, red_devjee: form.red_devjee, round: Number(form.round), status: form.status })
-    setShowMatchForm(false)
-    setForm({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
-    showToast('Барилдаан нэмэгдлээ!'); fetchData()
-  }
-
-  const declareWinner = async (matchId, side) => {
-    await supabase.from('matches').update({ status: 'closed', winner: side }).eq('id', matchId)
-    const match = matches.find(m => m.id === matchId)
-    showToast(`${side === 'blue' ? match?.blue_name : match?.red_name} давлаа!`); fetchData()
-  }
-
-  const vote = async (matchId, side) => {
+  // Picks
+  const togglePick = async (round, wrestlerName) => {
     if (!isSubscribed) { setSubPage(true); return }
-    if (myVotes[matchId]) { showToast('Та энэ барилдаанд санал өгсөн байна'); return }
-    const { error } = await supabase.from('votes').insert({ match_id: matchId, side, voter_key: VOTER_KEY })
-    if (error) { showToast('Алдаа гарлаа'); return }
-    setMyVotes(p => ({ ...p, [matchId]: side }))
-    setVoteCounts(p => ({ ...p, [matchId]: { ...(p[matchId] || { blue: 0, red: 0 }), [side]: ((p[matchId]?.[side] || 0) + 1) } }))
-    showToast('Санал амжилттай өгөгдлөө!')
-  }
+    const key = `${round.id}_${wrestlerName}`
+    const myRoundPicks = Object.keys(myPicks).filter(k => k.startsWith(`${round.id}_`)).length
+    const maxPicks = Number(round.round_type)
 
-  const addWrestler = async () => {
-    const name = wrestlerForm.isCustom ? wrestlerForm.customName.trim() : wrestlerForm.name.trim()
-    if (!name) { showToast('Нэр оруулна уу'); return }
-    await supabase.from('naadam_wrestlers').insert({ round: naadamRound, name, title: wrestlerForm.isCustom ? '' : wrestlerForm.title, devjee: wrestlerForm.isCustom ? '' : wrestlerForm.devjee })
-    setShowWrestlerForm(false)
-    setWrestlerForm({ name: '', title: 'Улсын начин', devjee: 'Улаанбаатар', isCustom: false, customName: '' })
-    showToast('Бөх нэмэгдлээ!'); fetchNaadam()
-  }
-
-  const deleteWrestler = async (id) => {
-    await supabase.from('naadam_predictions').delete().eq('wrestler_id', id)
-    await supabase.from('naadam_wrestlers').delete().eq('id', id)
-    showToast('Устгагдлаа!'); fetchNaadam()
-  }
-
-  const togglePrediction = async (wrestler) => {
-    if (!isSubscribed) { setSubPage(true); return }
-    const key = `${wrestler.round}_${wrestler.id}`
-    if (myPredictions[key]) {
-      await supabase.from('naadam_predictions').delete().eq('wrestler_id', wrestler.id).eq('voter_key', VOTER_KEY)
-      setMyPredictions(p => { const n = { ...p }; delete n[key]; return n })
-      setPredCounts(p => ({ ...p, [wrestler.id]: Math.max(0, (p[wrestler.id] || 1) - 1) }))
+    if (myPicks[key]) {
+      await supabase.from('round_picks').delete().eq('round_id', round.id).eq('voter_key', VOTER_KEY).eq('wrestler_name', wrestlerName)
+      setMyPicks(p => { const n = { ...p }; delete n[key]; return n })
+      setPickCounts(p => ({ ...p, [key]: Math.max(0, (p[key] || 1) - 1) }))
       showToast('Сонголт цуцлагдлаа')
     } else {
-      const { error } = await supabase.from('naadam_predictions').insert({ round: wrestler.round, wrestler_id: wrestler.id, wrestler_name: wrestler.name, voter_key: VOTER_KEY })
+      if (myRoundPicks >= maxPicks) { showToast(`Хамгийн ихдээ ${maxPicks} бөх сонгоно`); return }
+      const { error } = await supabase.from('round_picks').insert({ round_id: round.id, voter_key: VOTER_KEY, wrestler_name: wrestlerName })
       if (error) { showToast('Алдаа гарлаа'); return }
-      setMyPredictions(p => ({ ...p, [key]: true }))
-      setPredCounts(p => ({ ...p, [wrestler.id]: (p[wrestler.id] || 0) + 1 }))
+      setMyPicks(p => ({ ...p, [key]: { is_correct: false } }))
+      setPickCounts(p => ({ ...p, [key]: (p[key] || 0) + 1 }))
       showToast('Таамаглал нэмэгдлээ!')
     }
   }
 
-  const setWinner = async (wrestlerId) => {
-    const w = naadamWrestlers.find(x => x.id === wrestlerId)
-    await supabase.from('naadam_wrestlers').update({ is_winner: !w.is_winner }).eq('id', wrestlerId)
-    showToast(w.is_winner ? 'Цуцлагдлаа' : '🏆 Давагч тэмдэглэгдлээ!'); fetchNaadam()
+  const markCorrect = async (round, wrestlerName, current) => {
+    await supabase.from('round_picks').update({ is_correct: !current }).eq('round_id', round.id).eq('wrestler_name', wrestlerName)
+    showToast(!current ? '✓ Зөв тэмдэглэгдлээ!' : 'Цуцлагдлаа')
+    fetchAll()
+  }
+
+  const addWrestlerToList = async () => {
+    if (!newWrestler.name.trim()) { showToast('Нэр оруулна уу'); return }
+    const exists = wrestlers.find(w => w.name.toLowerCase() === newWrestler.name.trim().toLowerCase())
+    if (exists) { showToast('Энэ нэртэй бөх байна'); return }
+    await supabase.from('wrestlers').insert({ name: newWrestler.name.trim(), title: newWrestler.title, devjee: newWrestler.devjee })
+    setNewWrestler({ name: '', title: 'Улсын начин', devjee: 'Улаанбаатар' })
+    setShowAddWrestler(null)
+    showToast('Бөх нэмэгдлээ!')
+    fetchAll()
   }
 
   const subscribe = async (plan) => {
     setSubLoading(true)
-    const expiresAt = new Date(); expiresAt.setMonth(expiresAt.getMonth() + 1)
-    const { error } = await supabase.from('subscriptions').upsert({ voter_key: VOTER_KEY, plan, status: 'active', expires_at: expiresAt.toISOString(), tg_user_id: tgUser?.id ? String(tgUser.id) : null, tg_username: tgUser?.username || null }, { onConflict: 'voter_key' })
-    setSubLoading(false)
-    if (error) { showToast('Алдаа гарлаа'); return }
-    setIsSubscribed(true); setSubPage(false); showToast('Subscription идэвхжлээ! 🎉')
+    const exp = new Date(); exp.setMonth(exp.getMonth() + 1)
+    await supabase.from('subscriptions').upsert({ voter_key: VOTER_KEY, plan, status: 'active', expires_at: exp.toISOString(), tg_user_id: tgUser?.id ? String(tgUser.id) : null, tg_username: tgUser?.username || null }, { onConflict: 'voter_key' })
+    setSubLoading(false); setIsSubscribed(true); setSubPage(false)
+    showToast('Subscription идэвхжлээ! 🎉')
   }
 
-  const getProb = (matchId) => {
-    const c = voteCounts[matchId] || { blue: 0, red: 0 }
-    const total = c.blue + c.red
-    return total === 0 ? 50 : Math.round((c.blue / total) * 100)
-  }
-  const getInitials = (name) => name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase()
+  // Filtered wrestlers
+  const filteredWrestlers = wrestlers.filter(w =>
+    (!filterTitle || w.title === filterTitle) &&
+    (!filterDevjee || w.devjee === filterDevjee) &&
+    (!searchName || w.name.toLowerCase().includes(searchName.toLowerCase()))
+  )
 
-  const activeByTournament = () => {
-    const result = []
-    tournaments.forEach(t => {
-      const tm = matches.filter(m => m.tournament_id === t.id)
-      if (tm.length > 0 || isAdmin) result.push({ tournament: t, matches: tm })
+  // My score per tournament
+  const myScoreByTour = (tourId) => {
+    const rounds = tournamentRounds.filter(r => r.tournament_id === tourId)
+    let score = 0
+    rounds.forEach(r => {
+      Object.keys(myPicks).forEach(key => {
+        if (key.startsWith(`${r.id}_`) && myPicks[key]?.is_correct) {
+          score += ROUND_POINTS[r.round_type] || 1
+        }
+      })
     })
-    const noTour = matches.filter(m => !m.tournament_id)
-    if (noTour.length > 0 || (isAdmin && tournaments.length === 0)) result.push({ tournament: null, matches: noTour })
-    return result
+    return score
   }
 
-  const histByTournament = () => {
-    const result = []
-    tournaments.forEach(t => {
-      const tm = history.filter(m => m.tournament_id === t.id)
-      if (tm.length > 0) result.push({ tournament: t, matches: tm })
-    })
-    const noTour = history.filter(m => !m.tournament_id)
-    if (noTour.length > 0) result.push({ tournament: null, matches: noTour })
-    return result
-  }
+  // ── CONFIRM DIALOG ──
+  const ConfirmDialog = () => !confirm ? null : (
+    <div style={{ position: 'fixed', inset: 0, background: '#00000080', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ background: C.bg, borderRadius: 16, padding: 24, width: '100%', maxWidth: 320 }}>
+        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>⚠️ Анхааруулга</div>
+        <div style={{ fontSize: 13, color: C.hint, marginBottom: 20 }}>{confirm.msg}</div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button style={st.primaryBtn} onClick={confirm.onConfirm}>Устгах</button>
+          <button style={st.cancelBtn} onClick={() => setConfirm(null)}>Болих</button>
+        </div>
+      </div>
+    </div>
+  )
 
-  const MatchCard = ({ m }) => {
-    const c = voteCounts[m.id] || { blue: 0, red: 0 }
-    const prob = getProb(m.id)
-    const redProb = 100 - prob
-    const total = c.blue + c.red
-    const myV = myVotes[m.id]
-    const isHist = m.status === 'closed'
-    return (
-      <div style={st.card}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-          <span style={st.badge(m.status === 'live')}>{m.status === 'live' ? '● Шууд' : m.status === 'upcoming' ? 'Удахгүй' : 'Дууссан'}</span>
-          <span style={{ fontSize: 12, color: C.hint }}>{m.round}-р давааны барилдаан</span>
-          <span style={{ marginLeft: 'auto', fontSize: 12, color: C.hint }}>{total} санал</span>
-        </div>
-        {m.winner && <div style={{ textAlign: 'center' }}><span style={st.winnerBadge(m.winner)}>🏆 {m.winner === 'blue' ? m.blue_name : m.red_name} давлаа</span></div>}
-        <div style={st.wrestlers}>
-          <div style={st.wrestler}>
-            <div style={st.avatar('#3390ec')}>{getInitials(m.blue_name)}</div>
-            <div style={st.name}>{m.blue_name}</div>
-            <div style={st.hint}>{m.blue_title}</div>
-            {m.blue_devjee && <div style={st.hint}>{m.blue_devjee} дэвжээ</div>}
+  // ── PREDICT PAGE ──
+  const PredictPage = () => (
+    <div>
+      <div style={{ padding: '14px 16px 8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ fontSize: 18, fontWeight: 700 }}>🤼 Таамаглал</div>
+        {isAdmin && (
+          <button onClick={() => { setShowTournamentForm(true); setEditTournament(null); setTForm({ name: '', year: new Date().getFullYear(), prize_pool: 0 }) }}
+            style={{ fontSize: 12, background: C.btn, color: C.btnText, border: 'none', padding: '6px 12px', borderRadius: 20, cursor: 'pointer' }}>
+            + Барилдаан нэмэх
+          </button>
+        )}
+      </div>
+
+      {isAdmin && showTournamentForm && (
+        <div style={st.formCard}>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{editTournament ? 'Барилдаан засах' : 'Шинэ барилдаан'}</div>
+          <div style={{ marginBottom: 10 }}>
+            <label style={st.label}>Барилдааны нэр</label>
+            <select style={st.input} value={tForm.name} onChange={e => setTForm(p => ({ ...p, name: e.target.value }))}>
+              <option value="">Сонгоно уу</option>
+              {TOURNAMENT_NAMES.map(n => <option key={n}>{n}</option>)}
+            </select>
           </div>
-          <div style={st.vs}>VS</div>
-          <div style={st.wrestler}>
-            <div style={st.avatar('#e53935')}>{getInitials(m.red_name)}</div>
-            <div style={st.name}>{m.red_name}</div>
-            <div style={st.hint}>{m.red_title}</div>
-            {m.red_devjee && <div style={st.hint}>{m.red_devjee} дэвжээ</div>}
-          </div>
-        </div>
-        <div style={st.barWrap}>
-          <div style={st.barBlue(prob)}>{prob > 15 ? `${prob}%` : ''}</div>
-          <div style={st.barRed(redProb)}>{redProb > 15 ? `${redProb}%` : ''}</div>
-        </div>
-        {!isHist && (
-          <>
-            <div style={st.voteRow}>
-              <button style={st.voteBtn(myV === 'blue', '#3390ec')} onClick={() => vote(m.id, 'blue')}>👍 {m.blue_name}<br /><span style={{ fontSize: 10, fontWeight: 400 }}>{c.blue} санал · {prob}%</span></button>
-              <button style={st.voteBtn(myV === 'red', '#e53935')} onClick={() => vote(m.id, 'red')}>👍 {m.red_name}<br /><span style={{ fontSize: 10, fontWeight: 400 }}>{c.red} санал · {redProb}%</span></button>
+          <div style={st.formRow}>
+            <div>
+              <label style={st.label}>Он</label>
+              <input style={st.input} type="number" min="2000" max="2100" value={tForm.year} onChange={e => setTForm(p => ({ ...p, year: Number(e.target.value) }))} />
             </div>
-            {isAdmin && (
-              <div style={st.winRow}>
-                <button style={st.winBtn('#3390ec')} onClick={() => declareWinner(m.id, 'blue')}>🏆 {m.blue_name} давлаа</button>
-                <button style={st.winBtn('#e53935')} onClick={() => declareWinner(m.id, 'red')}>🏆 {m.red_name} давлаа</button>
+            <div>
+              <label style={st.label}>Шагналын сан (₮)</label>
+              <input style={st.input} type="number" min="0" value={tForm.prize_pool} onChange={e => setTForm(p => ({ ...p, prize_pool: Number(e.target.value) }))} />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button style={st.primaryBtn} onClick={saveTournament}>{editTournament ? 'Хадгалах' : 'Нэмэх'}</button>
+            <button style={st.cancelBtn} onClick={() => { setShowTournamentForm(false); setEditTournament(null) }}>Болих</button>
+          </div>
+        </div>
+      )}
+
+      {tournaments.length === 0 && <div style={st.empty}>Одоогоор барилдаан байхгүй байна</div>}
+
+      {tournaments.map(t => {
+        const tName = `${t.year ? t.year + ' · ' : ''}${t.name}`
+        const rounds = tournamentRounds.filter(r => r.tournament_id === t.id)
+        const isExpanded = expandedTournament === t.id
+        const myScore = myScoreByTour(t.id)
+
+        return (
+          <div key={t.id} style={{ marginBottom: 8 }}>
+            {/* Tournament header */}
+            <div style={{ ...st.card, cursor: 'pointer', padding: '14px 16px' }} onClick={() => setExpandedTournament(isExpanded ? null : t.id)}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700 }}>{tName}</div>
+                  <div style={{ fontSize: 12, color: C.hint, marginTop: 2 }}>
+                    {t.prize_pool > 0 ? `Шагнал: ${t.prize_pool.toLocaleString()}₮` : 'Шагналын сан тодорхойгүй'}
+                    {myScore > 0 && <span style={{ marginLeft: 8, background: '#E8F5E9', color: '#2E7D32', padding: '1px 6px', borderRadius: 8, fontSize: 11 }}>{myScore} оноо</span>}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {isAdmin && (
+                    <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
+                      <button style={st.iconBtn(C.btn)} onClick={() => { setEditTournament(t); setTForm({ name: t.name, year: t.year || new Date().getFullYear(), prize_pool: t.prize_pool || 0 }); setShowTournamentForm(true) }}>✏️</button>
+                      <button style={st.iconBtn('#e53935')} onClick={() => deleteTournament(t)}>🗑</button>
+                    </div>
+                  )}
+                  <span style={{ color: C.hint, fontSize: 18 }}>{isExpanded ? '▲' : '▼'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Rounds */}
+            {isExpanded && (
+              <div style={{ margin: '0 12px', border: `1px solid ${C.sec}`, borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+                {ROUND_TYPES.map((rt, idx) => {
+                  const round = rounds.find(r => r.round_type === rt.type)
+                  if (!round) return null
+                  const isRoundExpanded = expandedRound === round.id
+                  const myRoundPicks = Object.keys(myPicks).filter(k => k.startsWith(`${round.id}_`)).length
+
+                  return (
+                    <div key={rt.type} style={{ borderBottom: idx < ROUND_TYPES.length - 1 ? `1px solid ${C.sec}` : 'none' }}>
+                      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isRoundExpanded ? C.sec : 'transparent' }}
+                        onClick={() => { setExpandedRound(isRoundExpanded ? null : round.id); setFilterTitle(''); setFilterDevjee(''); setSearchName('') }}>
+                        <div>
+                          <div style={{ fontSize: 13, fontWeight: 600 }}>{rt.label}</div>
+                          <div style={{ fontSize: 11, color: C.hint }}>
+                            {rt.points} оноо/бөх · Хамгийн ихдээ {rt.max} бөх
+                            {myRoundPicks > 0 && <span style={{ marginLeft: 6, color: C.btn, fontWeight: 600 }}>{myRoundPicks} таасан</span>}
+                          </div>
+                        </div>
+                        <span style={{ color: C.hint }}>{isRoundExpanded ? '▲' : '▼'}</span>
+                      </div>
+
+                      {isRoundExpanded && (
+                        <div style={{ padding: '0 0 12px' }}>
+                          {/* Filters */}
+                          <div style={{ display: 'flex', gap: 6, padding: '8px 12px', flexWrap: 'wrap' }}>
+                            <input style={{ ...st.input, flex: 2, minWidth: 100, fontSize: 12 }} placeholder="Нэрээр хайх..." value={searchName} onChange={e => setSearchName(e.target.value)} />
+                            <select style={{ ...st.input, flex: 1, minWidth: 80, fontSize: 11 }} value={filterTitle} onChange={e => setFilterTitle(e.target.value)}>
+                              <option value="">Бүх цол</option>
+                              {[...new Set(wrestlers.map(w => w.title).filter(Boolean))].sort().map(t => <option key={t}>{t}</option>)}
+                            </select>
+                            <select style={{ ...st.input, flex: 1, minWidth: 80, fontSize: 11 }} value={filterDevjee} onChange={e => setFilterDevjee(e.target.value)}>
+                              <option value="">Бүх дэвжээ</option>
+                              {[...new Set(wrestlers.map(w => w.devjee).filter(Boolean))].sort().map(d => <option key={d}>{d}</option>)}
+                            </select>
+                          </div>
+
+                          {/* Wrestler list */}
+                          {filteredWrestlers.map(w => {
+                            const key = `${round.id}_${w.name}`
+                            const selected = !!myPicks[key]
+                            const correct = myPicks[key]?.is_correct
+                            const count = pickCounts[key] || 0
+
+                            return (
+                              <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderBottom: `1px solid ${C.sec}20`, background: correct ? '#E8F5E920' : 'transparent' }}>
+                                <button style={st.checkBtn(selected)} onClick={() => togglePick(round, w.name)}>
+                                  {selected ? '✓' : ''}
+                                </button>
+                                <div style={{ flex: 1 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 500, color: correct ? '#2E7D32' : C.text }}>
+                                    {correct ? '🏆 ' : ''}{w.name}
+                                  </div>
+                                  {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee].filter(Boolean).join(' · ')}</div>}
+                                </div>
+                                <div style={{ fontSize: 11, color: C.hint, textAlign: 'right' }}>
+                                  <div>{count} санал</div>
+                                  {isAdmin && (
+                                    <button style={{ ...st.iconBtn('#2E7D32'), fontSize: 12 }} onClick={() => markCorrect(round, w.name, correct)}>
+                                      {correct ? '✓ Зөв' : '🏆'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })}
+
+                          {/* Add wrestler */}
+                          {showAddWrestler === round.id ? (
+                            <div style={{ padding: '12px', borderTop: `1px solid ${C.sec}` }}>
+                              <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 8 }}>Бөх нэмэх</div>
+                              <input style={{ ...st.input, marginBottom: 8 }} placeholder="Бөхийн нэр" value={newWrestler.name} onChange={e => setNewWrestler(p => ({ ...p, name: e.target.value }))} />
+                              <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+                                <select style={{ ...st.input, flex: 1, fontSize: 12 }} value={newWrestler.title} onChange={e => setNewWrestler(p => ({ ...p, title: e.target.value }))}>
+                                  {TITLES.map(t => <option key={t}>{t}</option>)}
+                                </select>
+                                <select style={{ ...st.input, flex: 1, fontSize: 12 }} value={newWrestler.devjee} onChange={e => setNewWrestler(p => ({ ...p, devjee: e.target.value }))}>
+                                  {DEVJEE.map(d => <option key={d}>{d}</option>)}
+                                </select>
+                              </div>
+                              <div style={{ display: 'flex', gap: 8 }}>
+                                <button style={st.primaryBtn} onClick={addWrestlerToList}>Нэмэх</button>
+                                <button style={st.cancelBtn} onClick={() => setShowAddWrestler(null)}>Болих</button>
+                              </div>
+                            </div>
+                          ) : (
+                            <button style={st.addBtn(C.btn)} onClick={() => setShowAddWrestler(round.id)}>
+                              + Жагсаалтад байхгүй бөх нэмэх
+                            </button>
+                          )}
+
+                          {!isSubscribed && (
+                            <div style={{ margin: '8px 12px 0', background: '#E3F2FD', borderRadius: 10, padding: '10px 12px', fontSize: 12, color: '#1565C0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <span>Таамаглалд оролцохын тулд subscription авна уу</span>
+                              <button onClick={() => setSubPage(true)} style={{ background: C.btn, color: '#fff', border: 'none', borderRadius: 8, padding: '5px 10px', fontSize: 11, fontWeight: 600, cursor: 'pointer' }}>Авах</button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             )}
-          </>
-        )}
-      </div>
-    )
-  }
+          </div>
+        )
+      })}
+    </div>
+  )
 
-  // ── PAGES ──────────────────────────────────────────────
-
+  // ── LEADERBOARD PAGE ──
   const LeaderboardPage = () => {
-    const totalScore = leaderboard.reduce((a, b) => a + b.score, 0)
-    const perPoint = totalScore > 0 ? prizePool / totalScore : 0
+    const tourIds = [...new Set(leaderboard.map(b => b.tourId))]
     return (
       <div>
-        <div style={{ padding: '16px 16px 8px' }}>
-          <div style={{ fontSize: 20, fontWeight: 700 }}>🏆 Байрны жагсаалт</div>
-          <div style={{ fontSize: 13, color: C.hint, marginTop: 4 }}>Нийт {leaderboard.length} оролцогч</div>
+        <div style={{ padding: '14px 16px 8px' }}>
+          <div style={{ fontSize: 18, fontWeight: 700 }}>🏆 Байрны жагсаалт</div>
         </div>
-        {myScore && (
-          <div style={{ margin: '0 12px 12px', background: '#E3F2FD', borderRadius: 12, padding: '12px 16px' }}>
-            <div style={{ fontSize: 12, color: '#1565C0', marginBottom: 4 }}>Таны байр</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <div style={{ fontSize: 15, fontWeight: 600, color: '#1565C0' }}>#{leaderboard.findIndex(b => b.key === VOTER_KEY) + 1} · {myScore.name}</div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#1565C0' }}>{myScore.score} оноо</div>
-                <div style={{ fontSize: 12, color: '#1565C0' }}>~{myScore.prize.toLocaleString()}₮</div>
-              </div>
+        {leaderboard.length === 0 && <div style={st.empty}>Одоогоор оноо байхгүй байна</div>}
+        {tourIds.map(tourId => {
+          const tourBoard = leaderboard.filter(b => b.tourId === tourId)
+          const tourName = tourBoard[0]?.tourName || ''
+          const myEntry = tourBoard.find(b => b.voter_key === VOTER_KEY)
+          return (
+            <div key={tourId}>
+              <div style={st.secTitle}>{tourName}</div>
+              {myEntry && (
+                <div style={{ margin: '0 12px 8px', background: '#E3F2FD', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ fontSize: 13, color: '#1565C0', fontWeight: 600 }}>#{tourBoard.findIndex(b => b.voter_key === VOTER_KEY) + 1} · Таны байр</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: '#1565C0' }}>{myEntry.score} оноо</div>
+                    <div style={{ fontSize: 11, color: '#1565C0' }}>~{myEntry.prize.toLocaleString()}₮</div>
+                  </div>
+                </div>
+              )}
+              {tourBoard.slice(0, 20).map((b, i) => (
+                <div key={b.voter_key} style={{ ...st.card, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: b.voter_key === VOTER_KEY ? '#E3F2FD' : C.bg }}>
+                  <div style={{ width: 32, height: 32, borderRadius: '50%', background: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : C.sec, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: i < 3 ? 16 : 13, fontWeight: 700, flexShrink: 0, color: i < 3 ? '#fff' : C.hint }}>
+                    {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 14, fontWeight: 500 }}>{b.name}</div>
+                    <div style={{ fontSize: 11, color: C.hint }}>{b.score} оноо</div>
+                  </div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: '#2E7D32' }}>{b.prize.toLocaleString()}₮</div>
+                </div>
+              ))}
             </div>
-          </div>
-        )}
-        {leaderboard.length === 0 ? (
-          <div style={st.empty}>Одоогоор оноо байхгүй байна</div>
-        ) : (
-          leaderboard.map((b, i) => (
-            <div key={b.key} style={{ ...st.card, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: b.key === VOTER_KEY ? '#E3F2FD' : C.bg }}>
-              <div style={{ width: 32, height: 32, borderRadius: '50%', background: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : C.sec, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: i < 3 ? 16 : 13, fontWeight: 700, flexShrink: 0, color: i < 3 ? '#fff' : C.hint }}>
-                {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : i + 1}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{b.name}</div>
-                <div style={{ fontSize: 11, color: C.hint }}>{b.score} оноо</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: '#2E7D32' }}>{b.prize.toLocaleString()}₮</div>
-              </div>
-            </div>
-          ))
-        )}
+          )
+        })}
       </div>
     )
   }
 
+  // ── PROFILE PAGE ──
   const ProfilePage = () => {
-    const myPreds = Object.keys(myPredictions).length
-    const myVoteCount = Object.keys(myVotes).length
-    const totalScore = leaderboard.reduce((a, b) => a + b.score, 0)
-    const perPoint = totalScore > 0 ? prizePool / totalScore : 0
-    const rank = leaderboard.findIndex(b => b.key === VOTER_KEY) + 1
+    const myTours = tournaments.map(t => {
+      const score = myScoreByTour(t.id)
+      const tourBoard = leaderboard.filter(b => b.tourId === t.id)
+      const rank = tourBoard.findIndex(b => b.voter_key === VOTER_KEY) + 1
+      const myEntry = tourBoard.find(b => b.voter_key === VOTER_KEY)
+      return { t, score, rank, prize: myEntry?.prize || 0 }
+    }).filter(x => x.score > 0)
 
     return (
-      <div style={{ padding: '16px' }}>
-        <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>👤 Профайл</div>
+      <div style={{ padding: 16 }}>
+        <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>👤 Профайл</div>
         <div style={{ background: C.sec, borderRadius: 16, padding: 20, marginBottom: 12, textAlign: 'center' }}>
           <div style={{ width: 60, height: 60, borderRadius: '50%', background: C.btn, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, color: '#fff', margin: '0 auto 12px' }}>
             {tgUser?.username ? tgUser.username[0].toUpperCase() : '👤'}
@@ -477,26 +593,22 @@ export default function App() {
           <div style={{ fontSize: 12, color: C.hint, marginTop: 4 }}>{isSubscribed ? '✓ Идэвхтэй subscription' : 'Subscription байхгүй'}</div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-          {[
-            { label: 'Байр', value: rank > 0 ? `#${rank}` : '-' },
-            { label: 'Нийт оноо', value: myScore?.score || 0 },
-            { label: 'Наадмын таамаглал', value: myPreds },
-            { label: 'Барилдааны санал', value: myVoteCount },
-          ].map(s => (
-            <div key={s.label} style={{ background: C.sec, borderRadius: 12, padding: '14px 16px', textAlign: 'center' }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: C.btn }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: C.hint, marginTop: 4 }}>{s.label}</div>
+        {myTours.length === 0 ? (
+          <div style={st.empty}>Одоогоор оноо байхгүй байна</div>
+        ) : (
+          myTours.map(({ t, score, rank, prize }) => (
+            <div key={t.id} style={st.card}>
+              <div style={{ fontSize: 14, fontWeight: 700, marginBottom: 8 }}>{t.year ? t.year + ' · ' : ''}{t.name}</div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+                {[{ label: 'Байр', value: rank > 0 ? `#${rank}` : '-' }, { label: 'Оноо', value: score }, { label: 'Шагнал', value: `${prize.toLocaleString()}₮` }].map(s => (
+                  <div key={s.label} style={{ background: C.sec, borderRadius: 10, padding: '10px 8px', textAlign: 'center' }}>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: C.btn }}>{s.value}</div>
+                    <div style={{ fontSize: 10, color: C.hint, marginTop: 2 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-
-        {myScore && (
-          <div style={{ background: '#E8F5E9', borderRadius: 12, padding: '14px 16px', textAlign: 'center' }}>
-            <div style={{ fontSize: 13, color: '#2E7D32', marginBottom: 4 }}>Таны одоогийн шагнал</div>
-            <div style={{ fontSize: 28, fontWeight: 700, color: '#2E7D32' }}>{myScore.prize.toLocaleString()}₮</div>
-            <div style={{ fontSize: 11, color: '#2E7D32', marginTop: 4 }}>Наадам дуусахад тооцогдоно</div>
-          </div>
+          ))
         )}
 
         {!isSubscribed && (
@@ -508,51 +620,44 @@ export default function App() {
     )
   }
 
+  // ── RULES PAGE ──
   const RulesPage = () => (
-    <div style={{ padding: '16px' }}>
-      <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 16 }}>💰 Шагналын дүрэм</div>
-
-      <div style={{ background: C.sec, borderRadius: 16, padding: 16, marginBottom: 12 }}>
-        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Шагналын сан</div>
-        <div style={{ fontSize: 32, fontWeight: 700, color: '#2E7D32' }}>{prizePool.toLocaleString()}₮</div>
-        <div style={{ fontSize: 12, color: C.hint, marginTop: 4 }}>Наадам дуусахад оролцогчдод хуваарилагдана</div>
-      </div>
-
+    <div style={{ padding: 16 }}>
+      <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 16 }}>💰 Шагналын дүрэм</div>
       <div style={{ background: C.sec, borderRadius: 16, padding: 16, marginBottom: 12 }}>
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 12 }}>Давааны оноо</div>
-        {ROUNDS.map(r => (
-          <div key={r.round} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${C.hint}20` }}>
+        {ROUND_TYPES.map(r => (
+          <div key={r.type} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: `1px solid ${C.hint}20` }}>
             <div>
-              <div style={{ fontSize: 13, fontWeight: 500 }}>{r.round}-р давааны бөхийг зөв таах</div>
-              <div style={{ fontSize: 11, color: C.hint }}>Хамгийн ихдээ {r.max} бөх</div>
+              <div style={{ fontSize: 13, fontWeight: 500 }}>{r.label}</div>
+              <div style={{ fontSize: 11, color: C.hint }}>Хамгийн ихдээ {r.max} бөх сонгоно</div>
             </div>
             <div style={{ fontSize: 16, fontWeight: 700, color: C.btn }}>{r.points} оноо</div>
           </div>
         ))}
       </div>
-
       <div style={{ background: C.sec, borderRadius: 16, padding: 16, marginBottom: 12 }}>
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Тооцооллын дүрэм</div>
-        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.8 }}>
+        <div style={{ fontSize: 13, color: C.text, lineHeight: 1.9 }}>
           <div>1️⃣ Зөв таасан бөх × Давааны оноо = Таны оноо</div>
-          <div>2️⃣ Бүх оролцогчдын нийт оноог нэмнэ</div>
-          <div>3️⃣ {prizePool.toLocaleString()}₮ ÷ Нийт оноо = 1 онооны үнэ</div>
+          <div>2️⃣ Бүх оролцогчдын нийт онооны нийлбэр</div>
+          <div>3️⃣ Шагналын сан ÷ Нийт оноо = 1 онооны үнэ</div>
           <div>4️⃣ Таны оноо × 1 онооны үнэ = Таны шагнал</div>
         </div>
       </div>
-
       <div style={{ background: '#FFF8E1', borderRadius: 16, padding: 16, border: '1px solid #FFD54F' }}>
         <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>📌 Жишээ</div>
-        <div style={{ fontSize: 12, color: C.hint, lineHeight: 1.8 }}>
-          <div>• 5-р давааны 4 бөхийг зөв таасан → 4×1 = 4 оноо</div>
-          <div>• 6-р давааны 2 бөхийг зөв таасан → 2×2 = 4 оноо</div>
-          <div>• 9-р давааны бөхийг зөв таасан → 1×16 = 16 оноо</div>
-          <div style={{ marginTop: 8, fontWeight: 600, color: C.text }}>Нийт: 24 оноо</div>
+        <div style={{ fontSize: 12, color: C.hint, lineHeight: 1.9 }}>
+          <div>• Шөвгийн 16-аас 15 зөв → 15×1 = 15 оноо</div>
+          <div>• Шөвгийн 8-аас 4 зөв → 4×2 = 8 оноо</div>
+          <div>• Түрүү бөхийг зөв → 1×16 = 16 оноо</div>
+          <div style={{ marginTop: 8, fontWeight: 600, color: C.text }}>Нийт: 39 оноо</div>
         </div>
       </div>
     </div>
   )
 
+  // ── SUBSCRIPTION PAGE ──
   const SubPageComp = () => (
     <div style={{ padding: '24px 16px' }}>
       <button onClick={() => setSubPage(false)} style={{ background: 'none', border: 'none', color: C.btn, fontSize: 14, cursor: 'pointer', marginBottom: 16, padding: 0 }}>← Буцах</button>
@@ -561,195 +666,25 @@ export default function App() {
         <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 4 }}>Subscription авах</div>
         <div style={{ fontSize: 13, color: C.hint }}>Тааварт оролцож, шагнал хүртэх</div>
       </div>
-      {[{ plan: 'standard', label: 'Стандарт', price: prices.standard, stars: prices.stars_standard, color: C.btn, features: ['Барилдааны санал өгөх', 'Наадмын таамаглалд оролцох', 'Leaderboard харах'] }, { plan: 'premium', label: 'Premium ⭐', price: prices.premium, stars: prices.stars_premium, color: '#F57F17', features: ['Стандартын бүх эрх', 'Дэлгэрэнгүй статистик', 'Premium тэмдэг 🥇'] }].map(p => (
+      {[
+        { plan: 'standard', label: 'Стандарт', price: prices.standard, color: C.btn, features: ['Бүх барилдааны тааварт оролцох', 'Leaderboard харах', 'Оноо цуглуулах'] },
+        { plan: 'premium', label: 'Premium ⭐', price: prices.premium, color: '#F57F17', features: ['Стандартын бүх эрх', 'Дэлгэрэнгүй статистик', 'Premium тэмдэг 🥇'] }
+      ].map(p => (
         <div key={p.plan} style={{ background: p.plan === 'premium' ? '#FFF8E1' : C.sec, borderRadius: 16, padding: 20, marginBottom: 12, border: p.plan === 'premium' ? '1.5px solid #FFD54F' : 'none' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
             <div><div style={{ fontSize: 16, fontWeight: 600 }}>{p.label}</div><div style={{ fontSize: 12, color: C.hint }}>1 сар</div></div>
-            <div style={{ textAlign: 'right' }}><div style={{ fontSize: 20, fontWeight: 700, color: p.color }}>{p.price.toLocaleString()}₮</div><div style={{ fontSize: 11, color: C.hint }}>{p.stars} ⭐</div></div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: p.color }}>{p.price.toLocaleString()}₮</div>
           </div>
           <div style={{ fontSize: 12, color: C.hint, marginBottom: 16, lineHeight: 1.7 }}>{p.features.map((f, i) => <div key={i}>✓ {f}</div>)}</div>
-          <button style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: p.color, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: subLoading ? 0.6 : 1 }} onClick={() => subscribe(p.plan)} disabled={subLoading}>{subLoading ? 'Уншиж байна...' : `${p.label} авах`}</button>
+          <button style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: p.color, color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: subLoading ? 0.6 : 1 }} onClick={() => subscribe(p.plan)} disabled={subLoading}>
+            {subLoading ? 'Уншиж байна...' : `${p.label} авах`}
+          </button>
         </div>
       ))}
     </div>
   )
 
-  const PredictPage = () => (
-    <>
-      <div style={{ display: 'flex', gap: 8, padding: '10px 16px', borderBottom: `1px solid ${C.sec}` }}>
-        <button style={st.subTab(predictTab === 'match')} onClick={() => setPredictTab('match')}>🥊 Барилдаан</button>
-        <button style={st.subTab(predictTab === 'naadam')} onClick={() => setPredictTab('naadam')}>🏆 Наадам</button>
-      </div>
-
-      {predictTab === 'match' ? (
-        <>
-          <div style={{ display: 'flex', gap: 6, padding: '8px 16px' }}>
-            <button style={st.subTab(matchHistTab === 'active')} onClick={() => setMatchHistTab('active')}>Идэвхтэй</button>
-            <button style={st.subTab(matchHistTab === 'history')} onClick={() => setMatchHistTab('history')}>Түүх</button>
-          </div>
-          {!isSubscribed && (
-            <div style={{ margin: '0 12px 12px', background: '#E3F2FD', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#1565C0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Санал өгөхийн тулд subscription авна уу</span>
-              <button onClick={() => setSubPage(true)} style={{ background: C.btn, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Авах</button>
-            </div>
-          )}
-          {matchHistTab === 'active' ? (
-            <>
-              {isAdmin && showTournamentForm && (
-                <div style={st.formCard}>
-                  <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{editTournament ? 'Нэр засах' : 'Шинэ барилдааны нэр'}</div>
-                  <div style={st.formRow}>
-                    <div><label style={st.label}>Барилдааны нэр</label><select style={st.input} value={tournamentName} onChange={e => setTournamentName(e.target.value)}><option value="">Сонгоно уу</option>{'Улсын наадам,Цагаан сар,Цагаан сар (сум),Цагаан сар (аймгийн начин),Цагаан сар (аймаг цэрэг),БНМАУ тунхагласны ой,Ерөнхийлөгчийн цом,Цэргийн наадам,Начин цолны хүндэтгэл,Харцага цолны хүндэтгэл,Заан цолны хүндэтгэл,Гарьд цолны хүндэтгэл,Арслан цолны хүндэтгэл,Аварга цолны хүндэтгэл,Сонгинохайрхан хишиг,Баянзүрх хишиг,Богдхан хишиг,Чингэлтэй хишиг,Хатан Туулын хишиг,Зэвсэгт хүчний ой,Наурызын баяр,Атар хэвийн боовны баяр,Шинэ үндсэн хуулийн барилдаан,Эх орончдын өдөр,Монгол бахархлын өдөр,Ардчилсан намын ой,Ардчилсан хувьсгалын ой,Наадмын сорилго,Уяачдын наадам,Нэрэмжит барилдаан,Аймгийн цолтон,Аймгийн начин,Сумын цолтон,Аймгийн баяр наадам,Орон нутгийн барилдаан,Үндэсний алтан цом,Ойн барилдаан,Цолгүй залуу бөхчүүдийн барилдаан,Нийтийн монгол бөх,Нийслэл Улаанбаатар хотын ой'.split(',').map(n => <option key={n}>{n}</option>)}</select></div>
-                    <div><label style={st.label}>Он</label><input style={st.input} type="number" min="2000" max="2100" value={tournamentYear} onChange={e => setTournamentYear(Number(e.target.value))} /></div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button style={st.primaryBtn} onClick={saveTournament}>{editTournament ? 'Хадгалах' : 'Нэмэх'}</button>
-                    <button style={st.cancelBtn} onClick={() => { setShowTournamentForm(false); setEditTournament(null); setTournamentName('') }}>Болих</button>
-                  </div>
-                </div>
-              )}
-              {activeByTournament().map(({ tournament, matches: tm }) => (
-                <div key={tournament?.id || 'none'}>
-                  <div style={st.secTitle}>
-                    <span>{tournament ? `${tournament.year ? tournament.year + ' · ' : ''}${tournament.name}` : 'Барилдаан'}</span>
-                    {isAdmin && tournament && (
-                      <div style={{ display: 'flex', gap: 4 }}>
-                        <button style={st.iconBtn(C.btn)} onClick={() => { setEditTournament(tournament); setTournamentName(tournament.name); setTournamentYear(tournament.year || new Date().getFullYear()); setShowTournamentForm(true) }}>✏️</button>
-                        <button style={st.iconBtn('#e53935')} onClick={() => deleteTournament(tournament.id)}>🗑</button>
-                      </div>
-                    )}
-                  </div>
-                  {tm.map(m => <MatchCard key={m.id} m={m} />)}
-                  {isAdmin && (showMatchForm && selectedTournamentId === (tournament?.id || null) ? (
-                    <div style={st.formCard}>
-                      <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Шинэ барилдаан</div>
-                      <div style={st.formRow}>
-                        <div><label style={st.label}>Цэнхэр бөх</label><input style={st.input} placeholder="Б. Болд" value={form.blue_name} onChange={e => setForm(p => ({ ...p, blue_name: e.target.value }))} /></div>
-                        <div><label style={st.label}>Улаан бөх</label><input style={st.input} placeholder="Д. Ганбат" value={form.red_name} onChange={e => setForm(p => ({ ...p, red_name: e.target.value }))} /></div>
-                      </div>
-                      <div style={st.formRow}>
-                        <div><label style={st.label}>Цол (цэнхэр)</label><select style={st.input} value={form.blue_title} onChange={e => setForm(p => ({ ...p, blue_title: e.target.value }))}>{TITLES.map(t => <option key={t}>{t}</option>)}</select></div>
-                        <div><label style={st.label}>Цол (улаан)</label><select style={st.input} value={form.red_title} onChange={e => setForm(p => ({ ...p, red_title: e.target.value }))}>{TITLES.map(t => <option key={t}>{t}</option>)}</select></div>
-                      </div>
-                      <div style={st.formRow}>
-                        <div><label style={st.label}>Дэвжээ (цэнхэр)</label><select style={st.input} value={form.blue_devjee} onChange={e => setForm(p => ({ ...p, blue_devjee: e.target.value }))}>{DEVJEE.map(d => <option key={d}>{d}</option>)}</select></div>
-                        <div><label style={st.label}>Дэвжээ (улаан)</label><select style={st.input} value={form.red_devjee} onChange={e => setForm(p => ({ ...p, red_devjee: e.target.value }))}>{DEVJEE.map(d => <option key={d}>{d}</option>)}</select></div>
-                      </div>
-                      <div style={st.formRow}>
-                        <div><label style={st.label}>Давааны дугаар</label><input style={st.input} type="number" min="1" max="9" value={form.round} onChange={e => setForm(p => ({ ...p, round: e.target.value }))} /></div>
-                        <div><label style={st.label}>Статус</label><select style={st.input} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}><option value="upcoming">Удахгүй</option><option value="live">Шууд</option></select></div>
-                      </div>
-                      <div style={{ display: 'flex', gap: 8 }}><button style={st.primaryBtn} onClick={addMatch}>Нэмэх</button><button style={st.cancelBtn} onClick={() => setShowMatchForm(false)}>Болих</button></div>
-                    </div>
-                  ) : (
-                    <button style={st.addBtn} onClick={() => { setSelectedTournamentId(tournament?.id || null); setShowMatchForm(true) }}>+ Барилдаан нэмэх</button>
-                  ))}
-                </div>
-              ))}
-              {isAdmin && !showTournamentForm && (
-                <button style={{ ...st.addBtn, borderColor: C.btn + '80', color: C.btn }} onClick={() => { setShowTournamentForm(true); setEditTournament(null); setTournamentName('') }}>+ Барилдааны нэр нэмэх</button>
-              )}
-              {matches.length === 0 && tournaments.length === 0 && !isAdmin && <div style={st.empty}>Одоогоор барилдаан байхгүй байна</div>}
-            </>
-          ) : (
-            <>
-              {histByTournament().map(({ tournament, matches: tm }) => (
-                <div key={tournament?.id || 'none'}>
-                  <div style={st.secTitle}><span>{tournament ? tournament.name : 'Барилдаан'}</span></div>
-                  {tm.map(m => <MatchCard key={m.id} m={m} />)}
-                </div>
-              ))}
-              {history.length === 0 && <div style={st.empty}>Түүх байхгүй байна</div>}
-            </>
-          )}
-        </>
-      ) : (
-        <>
-          <div style={{ display: 'flex', gap: 6, padding: '8px 16px', overflowX: 'auto' }}>
-            {ROUNDS.map(r => (
-              <button key={r.round} style={{ ...st.subTab(naadamRound === r.round), fontSize: 11 }} onClick={() => { setNaadamRound(r.round); setFilterTitle(''); setFilterDevjee('') }}>
-                {r.round}-р ({naadamWrestlers.filter(w => w.round === r.round).length})
-              </button>
-            ))}
-          </div>
-          <div style={{ margin: '0 12px 8px', background: '#E3F2FD', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#1565C0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span><strong>{naadamRound}-р давааны бөхчүүд</strong> — {naadamWrestlers.filter(w => w.round === naadamRound).length} бөх</span>
-            {isSubscribed && <span style={{ background: '#1565C0', color: '#fff', borderRadius: 10, padding: '2px 8px', fontSize: 11 }}>{naadamWrestlers.filter(w => w.round === naadamRound && myPredictions[`${w.round}_${w.id}`]).length} таасан</span>}
-          </div>
-          <div style={{ display: 'flex', gap: 8, padding: '0 12px 8px' }}>
-            <select style={{ ...st.input, flex: 1, fontSize: 12 }} value={filterTitle} onChange={e => setFilterTitle(e.target.value)}>
-              <option value="">Бүх цол</option>
-              {[...new Set(naadamWrestlers.filter(w => w.round === naadamRound).map(w => w.title).filter(Boolean))].map(t => <option key={t}>{t}</option>)}
-            </select>
-            <select style={{ ...st.input, flex: 1, fontSize: 12 }} value={filterDevjee} onChange={e => setFilterDevjee(e.target.value)}>
-              <option value="">Бүх дэвжээ</option>
-              {[...new Set(naadamWrestlers.filter(w => w.round === naadamRound).map(w => w.devjee).filter(Boolean))].map(d => <option key={d}>{d}</option>)}
-            </select>
-          </div>
-          {naadamWrestlers.filter(w => w.round === naadamRound && (!filterTitle || w.title === filterTitle) && (!filterDevjee || w.devjee === filterDevjee)).map(w => {
-            const key = `${w.round}_${w.id}`
-            const selected = !!myPredictions[key]
-            const count = predCounts[w.id] || 0
-            return (
-              <div key={w.id} style={{ ...st.card, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px' }}>
-                <button onClick={() => togglePrediction(w)} style={{ width: 28, height: 28, borderRadius: 8, border: selected ? '2px solid #3390ec' : `1px solid ${C.hint}40`, background: selected ? '#3390ec' : 'transparent', color: selected ? '#fff' : C.hint, cursor: 'pointer', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  {selected ? '✓' : ''}
-                </button>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, fontWeight: 500, color: w.is_winner ? '#2E7D32' : C.text }}>{w.is_winner ? '🏆 ' : ''}{w.name}</div>
-                  {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee ? w.devjee + ' дэвжээ' : ''].filter(Boolean).join(' · ')}</div>}
-                </div>
-                <div style={{ fontSize: 12, color: C.hint, textAlign: 'right' }}>
-                  <div>{count} санал</div>
-                  {isAdmin && (
-                    <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
-                      <button style={st.iconBtn('#2E7D32')} onClick={() => setWinner(w.id)}>🏆</button>
-                      <button style={st.iconBtn('#e53935')} onClick={() => deleteWrestler(w.id)}>🗑</button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )
-          })}
-          {isAdmin && (showWrestlerForm ? (
-            <div style={st.formCard}>
-              <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Бөх нэмэх</div>
-              <div style={{ marginBottom: 10 }}>
-                <label style={st.label}><input type="checkbox" checked={wrestlerForm.isCustom} onChange={e => setWrestlerForm(p => ({ ...p, isCustom: e.target.checked }))} style={{ marginRight: 6 }} />Жагсаалтад байхгүй</label>
-              </div>
-              {wrestlerForm.isCustom ? (
-                <input style={{ ...st.input, marginBottom: 10 }} placeholder="Бөхийн нэр" value={wrestlerForm.customName} onChange={e => setWrestlerForm(p => ({ ...p, customName: e.target.value }))} />
-              ) : (
-                <>
-                  <div style={{ marginBottom: 10 }}><label style={st.label}>Нэр</label><input style={st.input} placeholder="Б. Батсуурь" value={wrestlerForm.name} onChange={e => setWrestlerForm(p => ({ ...p, name: e.target.value }))} /></div>
-                  <div style={st.formRow}>
-                    <div><label style={st.label}>Цол</label><select style={st.input} value={wrestlerForm.title} onChange={e => setWrestlerForm(p => ({ ...p, title: e.target.value }))}>{TITLES.map(t => <option key={t}>{t}</option>)}</select></div>
-                    <div><label style={st.label}>Дэвжээ</label><select style={st.input} value={wrestlerForm.devjee} onChange={e => setWrestlerForm(p => ({ ...p, devjee: e.target.value }))}>{DEVJEE.map(d => <option key={d}>{d}</option>)}</select></div>
-                  </div>
-                </>
-              )}
-              <div style={{ display: 'flex', gap: 8 }}><button style={st.primaryBtn} onClick={addWrestler}>Нэмэх</button><button style={st.cancelBtn} onClick={() => setShowWrestlerForm(false)}>Болих</button></div>
-            </div>
-          ) : (
-            <button style={st.addBtn} onClick={() => setShowWrestlerForm(true)}>+ Бөх нэмэх</button>
-          ))}
-          {!isSubscribed && (
-            <div style={{ margin: '12px', background: '#E3F2FD', borderRadius: 12, padding: '12px 16px', fontSize: 13, color: '#1565C0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span>Таамаглалд оролцохын тулд subscription авна уу</span>
-              <button onClick={() => setSubPage(true)} style={{ background: C.btn, color: '#fff', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>Авах</button>
-            </div>
-          )}
-        </>
-      )}
-    </>
-  )
-
-  if (subPage) return (
-    <div style={st.wrap}>
-      <SubPageComp />
-      <div style={st.toastEl(toast)}>{toast}</div>
-    </div>
-  )
+  if (subPage) return <div style={st.wrap}><SubPageComp /><div style={st.toastEl(toast)}>{toast}</div></div>
 
   return (
     <div style={st.wrap}>
@@ -774,9 +709,8 @@ export default function App() {
         </>
       )}
 
-      {/* Fixed Navigation Bar */}
       <nav style={st.navBar}>
-        {NAV_ITEMS.map(item => (
+        {NAV.map(item => (
           <button key={item.id} style={st.navItem(page === item.id)} onClick={() => setPage(item.id)}>
             <span style={st.navIcon}>{item.icon}</span>
             <span style={st.navLabel(page === item.id)}>{item.label}</span>
@@ -784,6 +718,7 @@ export default function App() {
         ))}
       </nav>
 
+      <ConfirmDialog />
       <div style={st.toastEl(toast)}>{toast}</div>
     </div>
   )

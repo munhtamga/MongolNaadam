@@ -375,7 +375,7 @@ export default function App() {
             </div>
             <div>
               <label style={st.label}>Шагналын сан (₮)</label>
-              <input style={st.input} type="number" min="0" value={tForm.prize_pool} onChange={e => setTForm(p => ({ ...p, prize_pool: Number(e.target.value) }))} />
+              <input style={st.input} type="text" inputMode="numeric" pattern="[0-9]*" value={tForm.prize_pool === 0 ? '' : tForm.prize_pool} placeholder="100000" onChange={e => { const v = e.target.value.replace(/[^0-9]/g, ''); setTForm(p => ({ ...p, prize_pool: v === '' ? 0 : Number(v) })) }} onKeyDown={e => e.key === 'Enter' && e.preventDefault()} />
             </div>
           </div>
           <div style={{ display: 'flex', gap: 8 }}>

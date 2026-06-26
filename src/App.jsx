@@ -110,6 +110,7 @@ export default function App() {
   const [showTournamentForm, setShowTournamentForm] = useState(false)
   const [editTournament, setEditTournament] = useState(null)
   const [tournamentName, setTournamentName] = useState('')
+  const [tournamentYear, setTournamentYear] = useState(new Date().getFullYear())
   const [showMatchForm, setShowMatchForm] = useState(false)
   const [selectedTournamentId, setSelectedTournamentId] = useState(null)
   const [form, setForm] = useState({ blue_name: '', blue_title: 'Улсын начин', blue_devjee: 'Улаанбаатар', red_name: '', red_title: 'Улсын начин', red_devjee: 'Улаанбаатар', round: 1, status: 'upcoming' })
@@ -246,11 +247,11 @@ export default function App() {
   const saveTournament = async () => {
     if (!tournamentName.trim()) { showToast('Нэр оруулна уу'); return }
     if (editTournament) {
-      await supabase.from('tournaments').update({ name: tournamentName.trim() }).eq('id', editTournament.id)
+      await supabase.from('tournaments').update({ name: tournamentName.trim(), year: tournamentYear }).eq('id', editTournament.id)
     } else {
-      await supabase.from('tournaments').insert({ name: tournamentName.trim() })
+      await supabase.from('tournaments').insert({ name: tournamentName.trim(), year: tournamentYear })
     }
-    setTournamentName(''); setEditTournament(null); setShowTournamentForm(false)
+    setTournamentName(''); setTournamentYear(new Date().getFullYear()); setEditTournament(null); setShowTournamentForm(false)
     showToast(editTournament ? 'Засагдлаа!' : 'Нэмэгдлээ!'); fetchData()
   }
 
@@ -597,7 +598,10 @@ export default function App() {
               {isAdmin && showTournamentForm && (
                 <div style={st.formCard}>
                   <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>{editTournament ? 'Нэр засах' : 'Шинэ барилдааны нэр'}</div>
-                  <input style={{ ...st.input, marginBottom: 10 }} placeholder="2026 оны улсын баяр наадам" value={tournamentName} onChange={e => setTournamentName(e.target.value)} />
+                  <div style={st.formRow}>
+                    <div><label style={st.label}>Барилдааны нэр</label><select style={st.input} value={tournamentName} onChange={e => setTournamentName(e.target.value)}><option value="">Сонгоно уу</option>{'Улсын наадам,Цагаан сар,Цагаан сар (сум),Цагаан сар (аймгийн начин),Цагаан сар (аймаг цэрэг),БНМАУ тунхагласны ой,Ерөнхийлөгчийн цом,Цэргийн наадам,Начин цолны хүндэтгэл,Харцага цолны хүндэтгэл,Заан цолны хүндэтгэл,Гарьд цолны хүндэтгэл,Арслан цолны хүндэтгэл,Аварга цолны хүндэтгэл,Сонгинохайрхан хишиг,Баянзүрх хишиг,Богдхан хишиг,Чингэлтэй хишиг,Хатан Туулын хишиг,Зэвсэгт хүчний ой,Наурызын баяр,Атар хэвийн боовны баяр,Шинэ үндсэн хуулийн барилдаан,Эх орончдын өдөр,Монгол бахархлын өдөр,Ардчилсан намын ой,Ардчилсан хувьсгалын ой,Наадмын сорилго,Уяачдын наадам,Нэрэмжит барилдаан,Аймгийн цолтон,Аймгийн начин,Сумын цолтон,Аймгийн баяр наадам,Орон нутгийн барилдаан,Үндэсний алтан цом,Ойн барилдаан,Цолгүй залуу бөхчүүдийн барилдаан,Нийтийн монгол бөх,Нийслэл Улаанбаатар хотын ой'.split(',').map(n => <option key={n}>{n}</option>)}</select></div>
+                    <div><label style={st.label}>Он</label><input style={st.input} type="number" min="2000" max="2100" value={tournamentYear} onChange={e => setTournamentYear(Number(e.target.value))} /></div>
+                  </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button style={st.primaryBtn} onClick={saveTournament}>{editTournament ? 'Хадгалах' : 'Нэмэх'}</button>
                     <button style={st.cancelBtn} onClick={() => { setShowTournamentForm(false); setEditTournament(null); setTournamentName('') }}>Болих</button>
@@ -607,10 +611,10 @@ export default function App() {
               {activeByTournament().map(({ tournament, matches: tm }) => (
                 <div key={tournament?.id || 'none'}>
                   <div style={st.secTitle}>
-                    <span>{tournament ? tournament.name : 'Барилдаан'}</span>
+                    <span>{tournament ? `${tournament.year ? tournament.year + ' · ' : ''}${tournament.name}` : 'Барилдаан'}</span>
                     {isAdmin && tournament && (
                       <div style={{ display: 'flex', gap: 4 }}>
-                        <button style={st.iconBtn(C.btn)} onClick={() => { setEditTournament(tournament); setTournamentName(tournament.name); setShowTournamentForm(true) }}>✏️</button>
+                        <button style={st.iconBtn(C.btn)} onClick={() => { setEditTournament(tournament); setTournamentName(tournament.name); setTournamentYear(tournament.year || new Date().getFullYear()); setShowTournamentForm(true) }}>✏️</button>
                         <button style={st.iconBtn('#e53935')} onClick={() => deleteTournament(tournament.id)}>🗑</button>
                       </div>
                     )}

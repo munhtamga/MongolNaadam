@@ -456,36 +456,58 @@ export default function App() {
                           </div>
 
                           {/* Wrestler list */}
-                          {filteredWrestlers.map(w => {
-                            const key = `${round.id}_${w.name}`
-                            const selected = !!myPicks[key]
-                            const correct = myPicks[key]?.is_correct
-                            const count = pickCounts[key] || 0
+                          {(() => {
+                            const maxPicks = Number(round.round_type)
+                            const myRoundPickKeys = Object.keys(myPicks).filter(k => k.startsWith(`${round.id}_`))
+                            const myRoundPickCount = myRoundPickKeys.length
+                            const isFull = myRoundPickCount >= maxPicks
+
+                            // If full, show only selected wrestlers
+                            const displayWrestlers = isFull
+                              ? wrestlers.filter(w => myPicks[`${round.id}_${w.name}`])
+                              : filteredWrestlers
 
                             return (
-                              <div key={w.id}
-                                onClick={() => !isAdmin && togglePick(round, w.name)}
-                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${C.sec}40`, background: selected ? '#E3F2FD' : correct ? '#E8F5E9' : 'transparent', cursor: isAdmin ? 'default' : 'pointer' }}>
-                                <div style={{ width: 24, height: 24, borderRadius: 6, border: selected ? '2px solid #3390ec' : `1.5px solid ${C.hint}60`, background: selected ? '#3390ec' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 14, fontWeight: 700 }}>
-                                  {selected ? '✓' : ''}
-                                </div>
-                                <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 13, fontWeight: selected ? 600 : 500, color: correct ? '#2E7D32' : selected ? '#1565C0' : C.text }}>
-                                    {correct ? '🏆 ' : ''}{w.name}
+                              <>
+                                {isFull && (
+                                  <div style={{ margin: '8px 12px', background: '#E8F5E9', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#2E7D32', fontWeight: 600 }}>
+                                    ✓ {maxPicks} бөх сонгосон — сонгосон бөхөө дарж хүчингүй болгоно
                                   </div>
-                                  {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee].filter(Boolean).join(' · ')}</div>}
-                                </div>
-                                <div style={{ fontSize: 11, color: C.hint, textAlign: 'right' }}>
-                                  <div>{count} санал</div>
-                                  {isAdmin && (
-                                    <button style={{ ...st.iconBtn('#2E7D32'), fontSize: 12 }} onClick={e => { e.stopPropagation(); markCorrect(round, w.name, correct) }}>
-                                      {correct ? '✓ Зөв' : '🏆'}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
+                                )}
+                                {displayWrestlers.map(w => {
+                                  const key = `${round.id}_${w.name}`
+                                  const selected = !!myPicks[key]
+                                  const correct = myPicks[key]?.is_correct
+                                  const count = pickCounts[key] || 0
+                                  const canClick = selected || !isFull
+
+                                  return (
+                                    <div key={w.id}
+                                      onClick={() => !isAdmin && canClick && togglePick(round, w.name)}
+                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${C.sec}40`, background: selected ? '#E3F2FD' : correct ? '#E8F5E9' : 'transparent', cursor: isAdmin ? 'default' : canClick ? 'pointer' : 'not-allowed', opacity: !isAdmin && isFull && !selected ? 0.4 : 1 }}>
+                                      <div style={{ width: 24, height: 24, borderRadius: 6, border: selected ? '2px solid #3390ec' : `1.5px solid ${C.hint}60`, background: selected ? '#3390ec' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 14, fontWeight: 700 }}>
+                                        {selected ? '✓' : ''}
+                                      </div>
+                                      <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: 13, fontWeight: selected ? 600 : 500, color: correct ? '#2E7D32' : selected ? '#1565C0' : C.text }}>
+                                          {correct ? '🏆 ' : ''}{w.name}
+                                        </div>
+                                        {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee].filter(Boolean).join(' · ')}</div>}
+                                      </div>
+                                      <div style={{ fontSize: 11, color: C.hint, textAlign: 'right' }}>
+                                        <div>{count} санал</div>
+                                        {isAdmin && (
+                                          <button style={{ ...st.iconBtn('#2E7D32'), fontSize: 12 }} onClick={e => { e.stopPropagation(); markCorrect(round, w.name, correct) }}>
+                                            {correct ? '✓ Зөв' : '🏆'}
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )
+                                })}
+                              </>
                             )
-                          })}
+                          })()}
 
                           {/* Add wrestler */}
                           {showAddWrestler === round.id ? (

@@ -266,6 +266,7 @@ export default function App() {
   // Picks
   const togglePick = async (round, wrestlerName) => {
     if (!isSubscribed) { setSubPage(true); return }
+    if (round.is_closed) { showToast('Энэ тааварт санал өгөх хугацаа дууссан'); return }
     const key = `${round.id}_${wrestlerName}`
     const myRoundPicks = Object.keys(myPicks).filter(k => k.startsWith(`${round.id}_`)).length
     const maxPicks = Number(round.round_type)
@@ -288,6 +289,12 @@ export default function App() {
   const markCorrect = async (round, wrestlerName, current) => {
     await supabase.from('round_picks').update({ is_correct: !current }).eq('round_id', round.id).eq('wrestler_name', wrestlerName)
     showToast(!current ? '✓ Зөв тэмдэглэгдлээ!' : 'Цуцлагдлаа')
+    fetchAll()
+  }
+
+  const toggleRoundClosed = async (round) => {
+    await supabase.from('tournament_rounds').update({ is_closed: !round.is_closed }).eq('id', round.id)
+    showToast(round.is_closed ? 'Таавар нээгдлээ!' : 'Таавар хаагдлаа!')
     fetchAll()
   }
 
@@ -428,16 +435,25 @@ export default function App() {
 
                   return (
                     <div key={rt.type} style={{ borderBottom: idx < ROUND_TYPES.length - 1 ? `1px solid ${C.sec}` : 'none' }}>
-                      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isRoundExpanded ? C.sec : 'transparent' }}
+                      <div style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', background: isRoundExpanded ? C.sec : round.is_closed ? '#FFF3E0' : 'transparent' }}
                         onClick={() => { setExpandedRound(isRoundExpanded ? null : round.id); setFilterTitle(''); setFilterDevjee(''); setSearchName('') }}>
                         <div>
-                          <div style={{ fontSize: 13, fontWeight: 600 }}>{rt.label}</div>
+                          <div style={{ fontSize: 13, fontWeight: 600 }}>{rt.label} {round.is_closed ? '🔒' : ''}</div>
                           <div style={{ fontSize: 11, color: C.hint }}>
                             {rt.points} оноо/бөх · Хамгийн ихдээ {rt.max} бөх
                             {myRoundPicks > 0 && <span style={{ marginLeft: 6, color: C.btn, fontWeight: 600 }}>{myRoundPicks} таасан</span>}
+                            {round.is_closed && <span style={{ marginLeft: 6, color: '#E65100', fontWeight: 600 }}>Хаагдсан</span>}
                           </div>
                         </div>
-                        <span style={{ color: C.hint }}>{isRoundExpanded ? '▲' : '▼'}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          {isAdmin && (
+                            <button style={{ fontSize: 11, padding: '3px 8px', borderRadius: 8, border: 'none', background: round.is_closed ? '#E8F5E9' : '#FFF3E0', color: round.is_closed ? '#2E7D32' : '#E65100', cursor: 'pointer', fontWeight: 600 }}
+                              onClick={e => { e.stopPropagation(); toggleRoundClosed(round) }}>
+                              {round.is_closed ? '🔓 Нээх' : '🔒 Хаах'}
+                            </button>
+                          )}
+                          <span style={{ color: C.hint }}>{isRoundExpanded ? '▲' : '▼'}</span>
+                        </div>
                       </div>
 
                       {isRoundExpanded && (
@@ -469,7 +485,12 @@ export default function App() {
 
                             return (
                               <>
-                                {isFull && (
+                                      {round.is_closed && (
+                                  <div style={{ margin: '8px 12px', background: '#FFF3E0', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#E65100', fontWeight: 600 }}>
+                                    🔒 Энэ тааварт санал өгөх хугацаа дууссан
+                                  </div>
+                                )}
+                                {isFull && !round.is_closed && (
                                   <div style={{ margin: '8px 12px', background: '#E8F5E9', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#2E7D32', fontWeight: 600 }}>
                                     ✓ {maxPicks} бөх сонгосон — сонгосон бөхөө дарж хүчингүй болгоно
                                   </div>

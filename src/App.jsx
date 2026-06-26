@@ -463,12 +463,14 @@ export default function App() {
                             const count = pickCounts[key] || 0
 
                             return (
-                              <div key={w.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', borderBottom: `1px solid ${C.sec}20`, background: correct ? '#E8F5E920' : 'transparent' }}>
-                                <button style={st.checkBtn(selected)} onClick={() => togglePick(round, w.name)}>
+                              <div key={w.id}
+                                onClick={() => !isAdmin && togglePick(round, w.name)}
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${C.sec}40`, background: selected ? '#E3F2FD' : correct ? '#E8F5E9' : 'transparent', cursor: isAdmin ? 'default' : 'pointer' }}>
+                                <div style={{ width: 24, height: 24, borderRadius: 6, border: selected ? '2px solid #3390ec' : `1.5px solid ${C.hint}60`, background: selected ? '#3390ec' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 14, fontWeight: 700 }}>
                                   {selected ? '✓' : ''}
-                                </button>
+                                </div>
                                 <div style={{ flex: 1 }}>
-                                  <div style={{ fontSize: 13, fontWeight: 500, color: correct ? '#2E7D32' : C.text }}>
+                                  <div style={{ fontSize: 13, fontWeight: selected ? 600 : 500, color: correct ? '#2E7D32' : selected ? '#1565C0' : C.text }}>
                                     {correct ? '🏆 ' : ''}{w.name}
                                   </div>
                                   {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee].filter(Boolean).join(' · ')}</div>}
@@ -476,7 +478,7 @@ export default function App() {
                                 <div style={{ fontSize: 11, color: C.hint, textAlign: 'right' }}>
                                   <div>{count} санал</div>
                                   {isAdmin && (
-                                    <button style={{ ...st.iconBtn('#2E7D32'), fontSize: 12 }} onClick={() => markCorrect(round, w.name, correct)}>
+                                    <button style={{ ...st.iconBtn('#2E7D32'), fontSize: 12 }} onClick={e => { e.stopPropagation(); markCorrect(round, w.name, correct) }}>
                                       {correct ? '✓ Зөв' : '🏆'}
                                     </button>
                                   )}

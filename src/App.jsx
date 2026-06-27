@@ -50,12 +50,12 @@ const TOURNAMENT_NAMES = [
 const ROUND_TYPES = [
   { type: '16', label: 'Шөвгийн 16 бөх', max: 16, points: 1 },
   { type: '8',  label: 'Шөвгийн 8 бөх',  max: 8,  points: 2 },
-  { type: '4',  label: 'Шөвгийн 4 бөх',  max: 4,  points: 4 },
-  { type: '2',  label: 'Үзүүр, түрүүний бөх', max: 2, points: 8 },
-  { type: '1',  label: 'Түрүү бөх',       max: 1,  points: 16 },
+  { type: '4',  label: 'Шөвгийн 4 бөх',  max: 4,  points: 3 },
+  { type: '2',  label: 'Үзүүр, түрүүний бөх', max: 2, points: 4 },
+  { type: '1',  label: 'Түрүү бөх',       max: 1,  points: 5 },
 ]
 
-const ROUND_POINTS = { '16': 1, '8': 2, '4': 4, '2': 8, '1': 16 }
+const ROUND_POINTS = { '16': 1, '8': 2, '4': 3, '2': 4, '1': 5 }
 
 const C = {
   bg: 'var(--tg-theme-bg-color,#fff)',
@@ -129,6 +129,9 @@ export default function App() {
   const [showTournamentForm, setShowTournamentForm] = useState(false)
   const [editTournament, setEditTournament] = useState(null)
   const [tForm, setTForm] = useState({ name: '', year: new Date().getFullYear(), prize_pool: 0 })
+
+  // Admin winner selection
+  const [adminWinners, setAdminWinners] = useState({}) // { roundId: Set of wrestler names }
 
   // Confirm dialog
   const [confirm, setConfirm] = useState(null)
@@ -296,6 +299,32 @@ export default function App() {
     await supabase.from('tournament_rounds').update({ is_closed: !round.is_closed }).eq('id', round.id)
     showToast(round.is_closed ? 'Таавар нээгдлээ!' : 'Таавар хаагдлаа!')
     fetchAll()
+  }
+
+  const saveWinners = async (round) => {
+    const winners = adminWinners[round.id] || new Set()
+    if (winners.size === 0) { showToast('Давсан бөхчүүдийг сонгоно уу'); return }
+
+    // First reset all picks for this round
+    await supabase.from('round_picks').update({ is_correct: false }).eq('round_id', round.id)
+
+    // Then mark selected as correct
+    for (const name of winners) {
+      await supabase.from('round_picks').update({ is_correct: true }).eq('round_id', round.id).eq('wrestler_name', name)
+    }
+
+    setAdminWinners(p => { const n = { ...p }; delete n[round.id]; return n })
+    showToast(`${winners.size} давсан бөх тэмдэглэгдлээ! 🏆`)
+    fetchAll()
+  }
+
+  const toggleAdminWinner = (roundId, name) => {
+    setAdminWinners(p => {
+      const set = new Set(p[roundId] || [])
+      if (set.has(name)) set.delete(name)
+      else set.add(name)
+      return { ...p, [roundId]: set }
+    })
   }
 
   const addWrestlerToList = async () => {
@@ -495,37 +524,81 @@ export default function App() {
                                     ✓ {maxPicks} бөх сонгосон — сонгосон бөхөө дарж хүчингүй болгоно
                                   </div>
                                 )}
-                                {displayWrestlers.map(w => {
-                                  const key = `${round.id}_${w.name}`
-                                  const selected = !!myPicks[key]
-                                  const correct = myPicks[key]?.is_correct
-                                  const count = pickCounts[key] || 0
-                                  const canClick = selected || !isFull
+                                {(() => {
+                                  // Admin mode: show wrestlers who got picks
+                                  if (isAdmin) {
+                                    const pickedNames = [...new Set(
+                                      Object.keys(pickCounts)
+                                        .filter(k => k.startsWith(`${round.id}_`) && pickCounts[k] > 0)
+                                        .map(k => k.replace(`${round.id}_`, ''))
+                                    )]
+                                    const adminSelected = adminWinners[round.id] || new Set()
 
-                                  return (
-                                    <div key={w.id}
-                                      onClick={() => !isAdmin && canClick && togglePick(round, w.name)}
-                                      style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${C.sec}40`, background: selected ? '#E3F2FD' : correct ? '#E8F5E9' : 'transparent', cursor: isAdmin ? 'default' : canClick ? 'pointer' : 'not-allowed', opacity: !isAdmin && isFull && !selected ? 0.4 : 1 }}>
-                                      <div style={{ width: 24, height: 24, borderRadius: 6, border: selected ? '2px solid #3390ec' : `1.5px solid ${C.hint}60`, background: selected ? '#3390ec' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 14, fontWeight: 700 }}>
-                                        {selected ? '✓' : ''}
-                                      </div>
-                                      <div style={{ flex: 1 }}>
-                                        <div style={{ fontSize: 13, fontWeight: selected ? 600 : 500, color: correct ? '#2E7D32' : selected ? '#1565C0' : C.text }}>
-                                          {correct ? '🏆 ' : ''}{w.name}
+                                    return pickedNames.length === 0 ? (
+                                      <div style={st.empty}>Санал өгсөн хэрэглэгч байхгүй байна</div>
+                                    ) : (
+                                      <>
+                                        <div style={{ margin: '8px 12px', background: '#FFF8E1', borderRadius: 10, padding: '8px 12px', fontSize: 12, color: '#E65100' }}>
+                                          Давсан бөхчүүдийг сонгоод "Давсан бөхчүүд" дарна уу
                                         </div>
-                                        {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee].filter(Boolean).join(' · ')}</div>}
-                                      </div>
-                                      <div style={{ fontSize: 11, color: C.hint, textAlign: 'right' }}>
-                                        <div>{count} санал</div>
-                                        {isAdmin && (
-                                          <button style={{ ...st.iconBtn('#2E7D32'), fontSize: 12 }} onClick={e => { e.stopPropagation(); markCorrect(round, w.name, correct) }}>
-                                            {correct ? '✓ Зөв' : '🏆'}
-                                          </button>
+                                        {pickedNames.map(name => {
+                                          const key = `${round.id}_${name}`
+                                          const count = pickCounts[key] || 0
+                                          const isWinnerSelected = adminSelected.has(name)
+                                          const alreadyCorrect = Object.values(myPicks).some(p => p?.is_correct)
+
+                                          return (
+                                            <div key={name}
+                                              onClick={() => toggleAdminWinner(round.id, name)}
+                                              style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${C.sec}40`, background: isWinnerSelected ? '#E8F5E9' : 'transparent', cursor: 'pointer' }}>
+                                              <div style={{ width: 24, height: 24, borderRadius: 6, border: isWinnerSelected ? '2px solid #2E7D32' : `1.5px solid ${C.hint}60`, background: isWinnerSelected ? '#2E7D32' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 14, fontWeight: 700 }}>
+                                                {isWinnerSelected ? '✓' : ''}
+                                              </div>
+                                              <div style={{ flex: 1 }}>
+                                                <div style={{ fontSize: 13, fontWeight: isWinnerSelected ? 600 : 500, color: isWinnerSelected ? '#2E7D32' : C.text }}>{name}</div>
+                                              </div>
+                                              <div style={{ fontSize: 12, color: C.hint }}>{count} санал</div>
+                                            </div>
+                                          )
+                                        })}
+                                        {adminSelected.size > 0 && (
+                                          <div style={{ padding: '10px 12px' }}>
+                                            <button style={{ width: '100%', padding: 12, borderRadius: 10, border: 'none', background: '#2E7D32', color: '#fff', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+                                              onClick={() => saveWinners(round)}>
+                                              🏆 {adminSelected.size} давсан бөхчүүд хадгалах
+                                            </button>
+                                          </div>
                                         )}
+                                      </>
+                                    )
+                                  }
+
+                                  // User mode
+                                  return displayWrestlers.map(w => {
+                                    const key = `${round.id}_${w.name}`
+                                    const selected = !!myPicks[key]
+                                    const correct = myPicks[key]?.is_correct
+                                    const count = pickCounts[key] || 0
+                                    const canClick = (selected || !isFull) && !round.is_closed
+
+                                    return (
+                                      <div key={w.id}
+                                        onClick={() => canClick && togglePick(round, w.name)}
+                                        style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderBottom: `1px solid ${C.sec}40`, background: selected ? '#E3F2FD' : correct ? '#E8F5E9' : 'transparent', cursor: canClick ? 'pointer' : 'default', opacity: isFull && !selected ? 0.4 : 1 }}>
+                                        <div style={{ width: 24, height: 24, borderRadius: 6, border: selected ? '2px solid #3390ec' : `1.5px solid ${C.hint}60`, background: selected ? '#3390ec' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#fff', fontSize: 14, fontWeight: 700 }}>
+                                          {selected ? '✓' : ''}
+                                        </div>
+                                        <div style={{ flex: 1 }}>
+                                          <div style={{ fontSize: 13, fontWeight: selected ? 600 : 500, color: correct ? '#2E7D32' : selected ? '#1565C0' : C.text }}>
+                                            {correct ? '🏆 ' : ''}{w.name}
+                                          </div>
+                                          {(w.title || w.devjee) && <div style={{ fontSize: 11, color: C.hint }}>{[w.title, w.devjee].filter(Boolean).join(' · ')}</div>}
+                                        </div>
+                                        <div style={{ fontSize: 11, color: C.hint }}>{count} санал</div>
                                       </div>
-                                    </div>
-                                  )
-                                })}
+                                    )
+                                  })
+                                })()}
                               </>
                             )
                           })()}
